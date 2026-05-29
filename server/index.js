@@ -4,7 +4,7 @@ const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
-const { testConnection } = require('./database/db');
+const db = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -91,7 +91,7 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.log('');
     
     // Test database connection on startup
-    const dbConnected = await testConnection();
+    let dbConnected = false; try { dbConnected = await db.testConnection(); } catch(e) { console.log('Database: Not connected yet - will retry'); }
     if (dbConnected) {
         console.log('Database: Connected successfully');
     } else {
