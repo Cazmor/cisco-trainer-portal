@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Surveillance - Cisco Trainer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0f1115;--panel:#151922;--text:#e8eaf0;--muted:#aab1c3;--accent:#d4a017;--danger:#ff5d5d;--warn:#ffb020;--success:#4cd97b;--info:#60a5fa;--border:#262c3a;--radius:12px}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text)}.app{display:grid;grid-template-columns:260px 1fr;height:100vh}
+.sidebar{background:#121620;border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column}
+.sidebar h2{color:var(--accent);font-size:16px;margin:0 0 20px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;color:var(--muted);cursor:pointer;border-radius:8px;margin-bottom:4px;font-size:13px;border-left:3px solid transparent}
+.nav-item:hover{background:#1a1f2b;color:var(--text)}.nav-item.active{background:#1a1f2b;color:var(--accent);border-left-color:var(--accent)}.nav-item i{width:18px}
+.main{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#121620;border-bottom:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px}.btn:hover{background:#1a1f2b}.btn.gold{background:var(--accent);color:#000}.btn.sm{padding:4px 8px;font-size:11px}
+.content{padding:16px;overflow:auto;flex:1}.section{display:none}.section.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;gap:10px;align-items:center}.stat .icon{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#1a2130;color:var(--accent)}.stat .value{font-size:20px;font-weight:700}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}.panel h3{color:var(--muted);font-size:14px;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px 10px;border-bottom:1px solid var(--border)}th{color:var(--muted);font-size:11px;text-transform:uppercase}
+.badge{padding:2px 8px;border-radius:12px;font-size:10px;background:#1a2130}.badge.success{color:var(--success)}.badge.danger{color:var(--danger)}.badge.warn{color:var(--warn)}
+.risk-high{color:var(--danger)}.risk-med{color:var(--warn)}.risk-low{color:var(--success)}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<h2><i class="fa-solid fa-shield-halved"></i> Surveillance</h2>
+<nav id="nav">
+<div class="nav-item active" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i><span>Command Centre</span></div>
+<div class="nav-item" data-page="instructors"><i class="fa-solid fa-user-tie"></i><span>Instructor Intel</span></div>
+<div class="nav-item" data-page="centres"><i class="fa-solid fa-building"></i><span>Centres</span></div>
+<div class="nav-item" data-page="alerts"><i class="fa-solid fa-exclamation-triangle"></i><span>Alerts</span></div>
+</nav>
+<div style="margin-top:auto"><button class="btn" onclick="logout()" style="width:100%;color:var(--danger)">Logout</button></div>
+</aside>
+<main class="main">
+<div class="topbar"><h3 id="pageTitle" style="color:var(--accent);margin:0">Command Centre</h3><button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i>Refresh</button></div>
+<div class="content" id="content">
+<section class="section active" id="sec-dashboard"><div id="dashContent">Loading...</div></section>
+<section class="section" id="sec-instructors"><div id="instContent">Loading...</div></section>
+<section class="section" id="sec-centres"><div id="centreContent">Loading...</div></section>
+<section class="section" id="sec-alerts"><div id="alertContent">Loading...</div></section>
+</div>
+</main>
+</div>
+<script>
+var API='/api/surveillance';var instructors=[];var centres=[];var alerts=[];
+function getToken(){return localStorage.getItem('token')}
+function logout(){localStorage.clear();location.href='/login.html'}
+function formatDate(d){if(!d)return'';return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}
+
+async function api(url,opt){opt=opt||{};
+var r=await fetch(API+url,{headers:{'Authorization':'Bearer '+getToken(),'Content-Type':'application/json'},method:opt.method||'GET',body:opt.body||undefined});
+var d=await r.json();if(!r.ok)throw new Error(d.error||'Failed');return d;
+}
+
+function nav(page){
+document.querySelectorAll('#nav .nav-item').forEach(function(i){i.classList.remove('active')});
+document.querySelector('[data-page="'+page+'"]').classList.add('active');
+document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
+document.getElementById('sec-'+page).classList.add('active');
+var t={dashboard:'Command Centre',instructors:'Instructor Intel',centres:'Centres',alerts:'Alerts'};
+document.getElementById('pageTitle').textContent=t[page];
+if(page==='dashboard')loadDashboard();else if(page==='instructors')loadInstructors();
+else if(page==='centres')loadCentres();else if(page==='alerts')loadAlerts();
+}
+function refresh(){nav('dashboard')}
+
+async function loadDashboard(){
+try{
+var data=await api('/instructors');instructors=data;centres=await api('/centres');alerts=await api('/alerts');
+var highRisk=instructors.filter(function(i){return(i.risk_score_0_100||0)>60}).length;
+var c=document.getElementById('dashContent');
+c.innerHTML='<div class="stats">'+
+'<div class="stat"><div class="icon"><i class="fa-solid fa-user-tie"></i></div><div><div style="color:var(--muted);font-size:11px">Instructors</div><div class="value">'+instructors.length+'</div></div></div>'+
+'<div class="stat"><div class="icon"><i class="fa-solid fa-building"></i></div><div><div style="color:var(--muted);font-size:11px">Centres</div><div class="value">'+centres.length+'</div></div></div>'+
+'<div class="stat"><div class="icon"><i class="fa-solid fa-exclamation-triangle"></i></div><div><div style="color:var(--muted);font-size:11px">Active Alerts</div><div class="value" style="color:'+(alerts.length>0?'var(--danger)':'var(--success)')+'">'+alerts.length+'</div></div></div>'+
+'<div class="stat"><div class="icon"><i class="fa-solid fa-skull"></i></div><div><div style="color:var(--muted);font-size:11px">High Risk</div><div class="value" style="color:'+(highRisk>0?'var(--danger)':'var(--success)')+'">'+highRisk+'</div></div></div>'+
+'</div>'+
+'<div class="panel"><h3>Instructor Risk Leaderboard</h3><table><thead><tr><th>#</th><th>Name</th><th>Centre</th><th>KPI/50</th><th>Risk</th><th>Evidence Age</th></tr></thead><tbody>';
+var sorted=instructors.sort(function(a,b){return(b.risk_score_0_100||0)-(a.risk_score_0_100||0)});
+for(var i=0;i<sorted.length;i++){
+var inst=sorted[i];var risk=inst.risk_score_0_100||0;var level=risk>60?'high':risk>30?'med':'low';
+c.innerHTML+='<tr><td>'+(i+1)+'</td><td><strong>'+inst.name+'</strong></td><td>'+inst.centre_name+'</td><td>'+(inst.kpi_out_of_50||'?')+'/50</td><td class="risk-'+level+'"><strong>'+risk+'</strong></td><td>'+(inst.evidence_age_days_max||'?')+'d</td></tr>';
+}
+c.innerHTML+='</tbody></table></div>';
+}catch(e){document.getElementById('dashContent').innerHTML='<p style="color:var(--danger)">'+e.message+'</p>'}
+}
+
+async function loadInstructors(){
+instructors=await api('/instructors');
+var c=document.getElementById('instContent');
+var h='<div class="panel"><h3>Instructor Intelligence</h3><table><thead><tr><th>Name</th><th>Centre</th><th>KPI/50</th><th>Risk Score</th><th>Evidence Age</th><th>Risk Factors</th></tr></thead><tbody>';
+for(var i=0;i<instructors.length;i++){
+var inst=instructors[i];var risk=inst.risk_score_0_100||0;var level=risk>60?'high':risk>30?'med':'low';
+var factors=(inst.risk_factors||[]).map(function(f){return '<span class="badge '+(level==='high'?'danger':'warn')+'">'+f+'</span>';}).join(' ');
+h+='<tr><td><strong>'+inst.name+'</strong></td><td>'+inst.centre_name+'</td><td>'+(inst.kpi_out_of_50||'?')+'/50</td><td class="risk-'+level+'"><strong>'+risk+'</strong></td><td>'+(inst.evidence_age_days_max||'?')+'d</td><td>'+factors+'</td></tr>';
+}
+h+='</tbody></table></div>';c.innerHTML=h;
+}
+
+async function loadCentres(){
+centres=await api('/centres');
+var c=document.getElementById('centreContent');
+var h='<div class="panel"><h3>Centre Health</h3><table><thead><tr><th>Name</th><th>Location</th><th>Health Score</th><th>Avg KPI</th></tr></thead><tbody>';
+for(var i=0;i<centres.length;i++){
+var ct=centres[i];var health=ct.centre_health_0_100||50;
+h+='<tr><td><strong>'+ct.name+'</strong></td><td>'+ct.location+'</td><td><span class="badge '+(health>70?'success':health>40?'warn':'danger')+'">'+health+'</span></td><td>'+(ct.avg_kpi_out_of_50||'?')+'/50</td></tr>';
+}
+h+='</tbody></table></div>';c.innerHTML=h;
+}
+
+async function loadAlerts(){
+alerts=await api('/alerts');
+var c=document.getElementById('alertContent');
+var h='<div class="panel"><h3>Active Alerts</h3>';
+if(alerts.length===0)h+='<p style="color:var(--success)">No active alerts</p>';
+else for(var i=0;i<alerts.length;i++){
+var a=alerts[i];h+='<div class="panel" style="border-left:3px solid '+(a.alert_type==='red'?'var(--danger)':'var(--warn)')+'"><strong>'+a.category+'</strong> - '+a.message+' <span class="badge '+(a.alert_type==='red'?'danger':'warn')+'">'+a.alert_type+'</span> <button class="btn sm" onclick="resolveAlert('+a.id+')">Resolve</button></div>';
+}
+h+='</div>';c.innerHTML=h;
+}
+
+async function resolveAlert(id){
+await api('/alerts/'+id,{method:'PUT',body:JSON.stringify({status:'resolved'})});
+loadAlerts();
+}
+
+document.querySelectorAll('#nav .nav-item').forEach(function(i){i.addEventListener('click',function(){nav(this.dataset.page)})});
+document.addEventListener('DOMContentLoaded',function(){if(!getToken()){location.href='/login.html';return}var u=JSON.parse(localStorage.getItem('user')||'{}');if(u.role!=='super_admin'){location.href='/index.html';return}nav('dashboard')});
+</script>
+</body>
+</html>

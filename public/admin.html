@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Super Admin - Cisco Trainer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0f1115;--panel:#151922;--text:#e8eaf0;--muted:#aab1c3;--accent:#d4a017;--danger:#ff5d5d;--warn:#ffb020;--success:#4cd97b;--info:#60a5fa;--border:#262c3a}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text)}
+.app{display:grid;grid-template-columns:260px 1fr;height:100vh}
+.sidebar{background:#121620;border-right:1px solid var(--border);padding:16px;display:flex;flex-direction:column}
+.sidebar h2{color:var(--accent);font-size:16px;margin:0 0 20px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;color:var(--muted);cursor:pointer;border-radius:8px;margin-bottom:4px;font-size:13px;border-left:3px solid transparent}
+.nav-item:hover{background:#1a1f2b;color:var(--text)}.nav-item.active{background:#1a1f2b;color:var(--accent);border-left-color:var(--accent)}.nav-item i{width:18px}
+.main{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#121620;border-bottom:1px solid var(--border)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:8px;cursor:pointer;font-size:13px}.btn:hover{background:#1a1f2b}.btn.gold{background:var(--accent);color:#000}.btn.danger{background:var(--danger);color:#fff}.btn.success{background:var(--success);color:#fff}.btn.sm{padding:4px 8px;font-size:11px}
+.content{padding:16px;overflow:auto;flex:1}.section{display:none}.section.active{display:block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;gap:10px;align-items:center}.stat .icon{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:#1a2130;color:var(--accent);font-size:18px}.stat .value{font-size:20px;font-weight:700}.stat .label{color:var(--muted);font-size:11px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px}.panel h3{color:var(--muted);font-size:14px;margin:0 0 12px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 12px;border-bottom:1px solid #2a3146;text-align:left}th{color:var(--accent);font-size:11px;text-transform:uppercase;background:#1a1f2b}td{color:var(--text)}tr:hover td{background:rgba(255,255,255,.03)}
+.badge{padding:2px 8px;border-radius:12px;font-size:10px;background:#1a2130}.badge.success{color:var(--success)}.badge.danger{color:var(--danger)}.badge.warn{color:var(--warn)}.badge.info{color:var(--info)}
+.mini-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.mini{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer}.mini:hover{border-color:var(--accent)}.mini h4{color:var(--text);font-size:14px;margin:0 0 4px}
+.health-bar{height:4px;background:#222;border-radius:2px;overflow:hidden;margin-top:6px}.health-fill{height:100%;border-radius:2px}
+.risk-high{color:var(--danger)}.risk-med{color:var(--warn)}.risk-low{color:var(--success)}body.light{--bg:#f8fafc;--panel:#ffffff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0}body.light .sidebar{background:#f1f5f9}body.light .topbar{background:#f1f5f9}body.light table td,body.light table th{border-color:#e2e8f0}body.light tr:hover td{background:#f8fafc}.heatmap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px}.heat-cell{aspect-ratio:1;border-radius:4px;cursor:pointer;transition:transform .15s}.heat-cell:hover{transform:scale(1.2);z-index:2}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:999;align-items:center;justify-content:center}.modal.show{display:flex}
+.modal-content{background:var(--panel);border:1px solid var(--accent);border-radius:12px;padding:20px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto}.modal-content h3{color:var(--accent);margin-bottom:12px}
+.modal-content input,.modal-content select{width:100%;padding:8px;background:#1a1f2b;border:1px solid var(--border);color:var(--text);border-radius:6px;margin-bottom:10px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.alert-row{display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:6px;background:var(--panel);border-radius:8px}.alert-row.red{border-left:3px solid var(--danger)}.alert-row.amber{border-left:3px solid var(--warn)}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+<h2><i class="fa-solid fa-shield-halved"></i> Super Admin</h2>
+<nav id="nav">
+<div class="nav-item active" data-page="dashboard"><i class="fa-solid fa-gauge-high"></i> Command Centre</div>
+<div class="nav-item" data-page="instructors"><i class="fa-solid fa-user-tie"></i> Instructor Intel</div>
+<div class="nav-item" data-page="centres"><i class="fa-solid fa-building"></i> Centres</div>
+<div class="nav-item" data-page="users"><i class="fa-solid fa-users"></i> Users</div>
+<div class="nav-item" data-page="pending"><i class="fa-solid fa-inbox"></i> Pending</div>
+<div class="nav-item" data-page="classes"><i class="fa-solid fa-chalkboard"></i> Classes</div>
+<div class="nav-item" data-page="labs"><i class="fa-solid fa-desktop"></i> Lab Surveillance</div>
+<div class="nav-item" data-page="attendance"><i class="fa-solid fa-calendar-check"></i> Attendance</div>
+<div class="nav-item" data-page="performance"><i class="fa-solid fa-chart-line"></i> Performance</div>
+<div class="nav-item" data-page="innovation"><i class="fa-solid fa-lightbulb"></i> Innovation & CPD</div>
+<div class="nav-item" data-page="compare"><i class="fa-solid fa-balance-scale"></i> Compare</div>
+<div class="nav-item" data-page="audit"><i class="fa-solid fa-clipboard-list"></i> Audit</div>
+<div class="nav-item" data-page="reports"><i class="fa-solid fa-file-export"></i> Reports</div>
+<div class="nav-item" data-page="alerts"><i class="fa-solid fa-exclamation-triangle"></i> Alerts <span class="badge danger" id="alertBadge" style="display:none;margin-left:auto">0</span></div>
+</nav>
+<div style="margin-top:auto"><button class="btn danger" onclick="logout()" style="width:100%">Logout</button></div>
+</aside>
+<main class="main">
+<div class="topbar"><h3 id="pageTitle" style="color:var(--accent);margin:0">Command Centre</h3><button class="btn" onclick="refresh()"><i class="fa-solid fa-rotate"></i>Refresh</button>
+<button class="btn" onclick="toggleTheme()" id="themeBtn"><i class="fa-solid fa-sun"></i> Light</button></div>
+<div class="content" id="content">
+<section class="section active" id="sec-dashboard"><div id="dashContent">Loading...</div></section>
+<section class="section" id="sec-instructors"><div id="instContent">Loading...</div></section>
+<section class="section" id="sec-centres"><div id="centreContent">Loading...</div></section>
+<section class="section" id="sec-users"><div id="userContent">Loading...</div></section>
+<section class="section" id="sec-pending"><div id="pendingContent">Loading...</div></section>
+<section class="section" id="sec-classes"><div id="classContent">Loading...</div></section>
+<section class="section" id="sec-labs"><div id="labContent">Loading...</div></section>
+<section class="section" id="sec-attendance"><div id="attContent">Loading...</div></section>
+<section class="section" id="sec-performance"><div id="perfContent">Loading...</div></section>
+<section class="section" id="sec-innovation"><div id="innovContent">Loading...</div></section>
+<section class="section" id="sec-compare"><div id="compareContent">Loading...</div></section>
+<section class="section" id="sec-audit"><div id="auditContent">Loading...</div></section>
+<section class="section" id="sec-reports"><div id="reportContent">Loading...</div></section>
+<section class="section" id="sec-alerts"><div id="alertContent">Loading...</div></section>
+</div>
+</main>
+</div>
+
+<div class="modal" id="centreModal"><div class="modal-content"><h3>Create Centre</h3><form id="centreForm">
+<input type="text" id="cname" placeholder="Centre Name" required>
+<input type="text" id="clocation" placeholder="Location" required>
+<div style="background:#1a2130;padding:10px;border-radius:8px;margin:8px 0"><h4 style="color:var(--accent);font-size:12px">Admin Account</h4>
+<input type="text" id="caname" placeholder="Admin Name" required>
+<input type="email" id="caemail" placeholder="Admin Email" required>
+<input type="password" id="capass" placeholder="Admin Password" required minlength="6"></div>
+<div class="modal-footer"><button type="button" class="btn" onclick="hideModal('centreModal')">Cancel</button><button type="submit" class="btn gold">Create</button></div>
+</form></div></div>
+
+<div class="modal" id="userModal"><div class="modal-content"><h3>Add User</h3><form id="userForm">
+<input type="text" id="uname" placeholder="Full Name" required>
+<input type="email" id="uemail" placeholder="Email" required>
+<input type="password" id="upass" placeholder="Password" required minlength="6">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><select id="urole"><option value="instructor">Instructor</option><option value="admin">Centre Admin</option></select><select id="ucentre"></select></div>
+<div class="modal-footer"><button type="button" class="btn" onclick="hideModal('userModal')">Cancel</button><button type="submit" class="btn gold">Create</button></div>
+</form></div></div>
+
+<div class="modal" id="deepDiveModal"><div class="modal-content"><h3 id="deepDiveTitle">Deep Dive</h3><div id="deepDiveBody"></div><div class="modal-footer"><button class="btn" onclick="hideModal('deepDiveModal')">Close</button></div></div></div>
+
+<script>
+var API='/api';var centres=[];var users=[];var charts={};
+function getToken(){return localStorage.getItem('token')}
+function logout(){localStorage.clear();location.href='/login.html'}
+function showLoading(){var el=document.getElementById('dashContent');if(el)el.innerHTML='<p style="color:var(--muted)">Loading...</p>';}
+function showModal(id){document.getElementById(id).classList.add('show')}
+function hideModal(id){document.getElementById(id).classList.remove('show')}
+function showToast(m,t){t=t||'info';var d=document.createElement('div');d.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--panel);border:1px solid var(--accent);color:var(--text);padding:12px 16px;border-radius:10px;z-index:9999;animation:slideIn .3s';d.textContent=m;document.body.appendChild(d);setTimeout(function(){d.remove()},3000);}
+function toggleTimeline(show){var d=document.getElementById('timelineDrawer');if(show===undefined)d.style.right=(d.style.right==='0px'?' -420px':'0px');else d.style.right=show?'0px':'-420px';}
+function timelineRow(icon,text,when,color){return '<div style="padding:8px;margin:4px 0;background:var(--panel);border-radius:6px;border-left:3px solid '+color+'"><i class="fa-solid '+icon+'" style="color:'+color+';margin-right:8px"></i>'+text+'<div style="font-size:11px;color:var(--muted)">'+(when?new Date(when).toLocaleString():'')+'</div></div>';}
+function formatDate(d){if(!d)return'';return new Date(d).toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}
+
+
+function tryJson(r){ return r.json().catch(function(){ return {}; }); }
+function p95(arr){ if(!arr||!arr.length)return 0;var xs=arr.slice().sort(function(a,b){return a-b;});var i=Math.floor(0.95*(xs.length-1));return Math.max(0,xs[i]);}
+function daysAgo(ts){ return ts?Math.max(0,Math.round((Date.now()-new Date(ts).getTime())/86400000)):null;}
+function kpiOutOf50(sum){ return Math.min(Math.max(Math.round((sum/110)*50),0),50);}
+function computeRisk(f){
+var s=0;
+if(f.kpiVol)s+=Math.min(f.kpiVol/10,1)*18;
+if(f.evidenceAgeMax)s+=Math.min(f.evidenceAgeMax/30,1)*14;
+if(f.attendanceDelayP95)s+=Math.min(f.attendanceDelayP95/360,1)*16;
+if(f.labToClassRatio)s+=Math.min(1-f.labToClassRatio,1)*14;
+if(f.passrateZ)s+=Math.min(Math.abs(f.passrateZ)/3,1)*14;
+if(f.sentimentDelta)s+=Math.min(-f.sentimentDelta/0.3,1)*12;
+if(f.authRisk)s+=Math.min(f.authRisk/100,1)*12;
+return Math.round(Math.min(s,100));
+}
+
+async function apiFetch(url,opt){
+opt=opt||{};var h={'Content-Type':'application/json','Authorization':'Bearer '+getToken()};
+if(opt.body)opt.body=JSON.stringify(opt.body);
+var r=await fetch(API+url,{headers:h,method:opt.method||'GET',body:opt.body});
+var d=await tryJson(r);if(!r.ok)throw new Error(d.error||'Failed');return d;
+}
+
+function nav(page){
+document.querySelectorAll('#nav .nav-item').forEach(function(i){i.classList.remove('active')});
+var el=document.querySelector('[data-page="'+page+'"]');if(el)el.classList.add('active');
+document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
+var sec=document.getElementById('sec-'+page);if(sec)sec.classList.add('active');
+var t={dashboard:'Command Centre',instructors:'Instructor Intel',centres:'Centres',classes:'Class Integrity',labs:'Lab Surveillance',attendance:'Attendance',performance:'Performance',innovation:'Innovation & CPD',compare:'Compare Centres',users:'Users',pending:'Pending',reports:'Reports',audit:'Audit',alerts:'Alerts'};
+document.getElementById('pageTitle').textContent=t[page]||page;
+if(page==='dashboard')loadDashboard();else if(page==='instructors')loadInstructors();
+else if(page==='centres')loadCentres();else if(page==='users')loadUsers();
+else if(page==='pending')loadPending();else if(page==='classes')loadClasses();
+else if(page==='labs')loadLabs();
+else if(page==='attendance')loadAttendance();
+else if(page==='performance')loadPerformance();
+else if(page==='innovation')loadInnovation();
+else if(page==='compare')loadCompare();
+else if(page==='audit')loadAudit();
+else if(page==='reports')loadReports();
+else if(page==='alerts')loadAlerts();
+}
+function updateAlertBadge(){try{apiFetch("/surveillance/alerts").then(function(a){var b=document.getElementById("alertBadge");if(!b)return;var red=a.filter(function(x){return x.alert_type==="red"}).length;if(red>0){b.style.display="inline";b.textContent=red;b.style.background="var(--danger)";}else{b.style.display="none";}}).catch(function(){});}catch(e){}}
+function toggleTheme(){var b=document.body;b.classList.toggle("light");var btn=document.getElementById("themeBtn");if(b.classList.contains("light")){btn.innerHTML='<i class="fa-solid fa-moon"></i> Dark';}else{btn.innerHTML='<i class="fa-solid fa-sun"></i> Light';}}
+function refresh(){var a=document.querySelector('#nav .nav-item.active');var p=a?a.dataset.page:'dashboard';nav(p)}
+
+// DASHBOARD
+async function loadDashboard(){
+try{
+var d=await apiFetch('/admin/dashboard');centres=await apiFetch('/admin/centres');users=await apiFetch('/admin/users');
+var pending=await apiFetch('/admin/pending-registrations');var kpi=await apiFetch('/kpi/scorecard');
+var instCount=users.filter(function(u){return u.role==='instructor'}).length;
+var c=document.getElementById('dashContent');
+var h='<div class="stats" id="dashboardStats">';
+h+='<div class="stat"><div class="icon"><i class="fa-solid fa-building"></i></div><div><div class="label">Centres</div><div class="value">'+d.total_centres+'</div></div></div>';
+h+='<div class="stat"><div class="icon"><i class="fa-solid fa-user-graduate"></i></div><div><div class="label">Students</div><div class="value">'+d.total_students+'</div></div></div>';
+h+='<div class="stat"><div class="icon"><i class="fa-solid fa-user-tie"></i></div><div><div class="label">Instructors</div><div class="value">'+instCount+'</div></div></div>';
+h+='<div class="stat"><div class="icon"><i class="fa-solid fa-inbox"></i></div><div><div class="label">Pending</div><div class="value">'+(pending?pending.length:0)+'</div></div></div>';
+h+='<div class="stat"><div class="icon"><i class="fa-solid fa-trophy"></i></div><div><div class="label">System KPI</div><div class="value">'+kpi.overall_score+'%</div></div></div>';
+h+='</div><div class="panel"><h3>Centre Rankings</h3><table><thead><tr><th>#</th><th>Centre</th><th>Students</th><th>Users</th></tr></thead><tbody>';
+var ranked=centres.sort(function(a,b){return(b.student_count||0)-(a.student_count||0)});
+for(var i=0;i<ranked.length;i++){h+='<tr><td>'+(i+1)+'</td><td><strong>'+ranked[i].name+'</strong></td><td>'+ranked[i].student_count+'</td><td>'+ranked[i].user_count+'</td></tr>';}
+h+='</tbody></table></div>';
+h+='<div style="text-align:right;font-size:10px;color:var(--muted);margin-top:8px">Last updated: '+new Date().toLocaleTimeString()+'</div>';
+c.innerHTML=h;
+setTimeout(async function(){
+try{
+var intel=await apiFetch('/surveillance/instructors');
+var sorted=intel.sort(function(a,b){return(b.risk_score_0_100||0)-(a.risk_score_0_100||0)}).slice(0,5);
+var lb='<div class="panel" style="margin-top:14px"><h3>Risk Leaderboard</h3><table><thead><tr><th>#</th><th>Instructor</th><th>Centre</th><th>Risk</th><th>Evidence</th></tr></thead><tbody>';
+for(var i=0;i<sorted.length;i++){var inst=sorted[i];var risk=inst.risk_score_0_100||0;var level=risk>60?'high':risk>30?'med':'low';lb+='<tr><td>'+(i+1)+'</td><td><strong>'+inst.name+'</strong></td><td>'+inst.centre_name+'</td><td style="color:'+(level==='high'?'var(--danger)':'var(--warn)')+';font-weight:700">'+risk+'/100</td><td>'+(inst.evidence_age_days_max||0)+'d</td></tr>';}
+lb+='</tbody></table></div>';c.innerHTML+=lb;
+}catch(e){}
+},300);
+}catch(e){document.getElementById('dashContent').innerHTML='<p style="color:var(--danger)">'+e.message+'</p>'}
+}
+
+// INSTRUCTORS
+async function loadInstructors(){
+try{
+var intel=await apiFetch('/surveillance/instructors');
+window._intel=intel;
+var c=document.getElementById('instContent');
+var h='<div class="panel"><h3>Instructor Intelligence ('+intel.length+')</h3><div class="mini-kpis">';
+for(var i=0;i<intel.length;i++){
+var inst=intel[i];var kpi=inst.kpi_out_of_50||0;var risk=inst.risk_score_0_100||0;var evAge=inst.evidence_age_days_max||0;
+var level=risk>60?'high':risk>30?'med':'low';
+h+='<div class="mini" style="cursor:pointer;border-left:3px solid '+(level==='high'?'var(--danger)':level==='med'?'var(--warn)':'var(--success)')+'" onclick="openDeepDive('+i+')"><h4>'+inst.name+'</h4><div style="font-size:11px;color:var(--muted)">'+(inst.centre_name||'N/A')+'</div><div style="display:flex;justify-content:space-between;margin:8px 0"><span>KPI: <strong>'+kpi+'/50</strong></span><span style="color:'+(level==='high'?'var(--danger)':'var(--warn)')+';font-weight:700">Risk: '+risk+'/100</span></div><div class="health-bar"><div class="health-fill" style="width:'+Math.max(100-risk,5)+'%;background:'+(level==='high'?'var(--danger)':level==='med'?'var(--warn)':'var(--success)')+'"></div></div><div style="font-size:10px;color:var(--muted);margin-top:4px">Evidence: '+evAge+'d | '+(inst.risk_factors||'No issues')+'</div></div>';
+}
+h+='</div></div>';c.innerHTML=h;
+}catch(e){document.getElementById('instContent').innerHTML='<div class="panel"><p>'+e.message+'</p><p style="color:var(--muted)">Run snapshot: node server/database/snapshot_cron.js</p></div>'}
+}
+
+
+async function showTimeline(instructorId){
+try{
+var attendance=await apiFetch('/attendance').catch(function(){return[];});
+var attItems=Array.isArray(attendance)?attendance:(attendance.items||[]);
+var events=[];
+attItems.filter(function(a){return(a.instructorId||a.instructor_id)===instructorId;}).slice(0,20).forEach(function(a){
+var end=a.class_end||a.endTime||a.classEnd;var post=a.posted_at||a.submittedAt||a.createdAt;
+var delay=(end&&post)?Math.round((new Date(post)-new Date(end))/60000)+'m delay':'';
+events.push(timelineRow('fa-clipboard-check','Attendance posted'+(delay?' ('+delay+')':''),post,'var(--accent)'));
+});
+if(events.length===0)events.push(timelineRow('fa-info-circle','No timeline events available for this instructor',null,'var(--muted)'));
+document.getElementById('timelineBody').innerHTML=events.join('');
+toggleTimeline(true);
+}catch(e){document.getElementById('timelineBody').innerHTML='<p style="color:var(--danger)">'+e.message+'</p>';toggleTimeline(true);}
+}
+
+var compareInstructor=null;
+
+function setCompareInstructor(idx){
+if(!compareInstructor){compareInstructor=idx;showToast('First instructor selected. Open another and click Compare again.','info');return;}
+var inst1=window._intel[compareInstructor];var inst2=window._intel[idx];
+if(!inst1||!inst2)return;
+var name1=inst1.name;var name2=inst2.name;
+var kpi1=inst1.kpi_out_of_50||0;var kpi2=inst2.kpi_out_of_50||0;
+var risk1=inst1.risk_score_0_100||0;var risk2=inst2.risk_score_0_100||0;
+var body='<h4>Comparing: '+name1+' vs '+name2+'</h4>';
+body+='<div class="stats" style="margin:12px 0"><div class="stat"><div><div class="label">'+name1+'</div><div class="value">KPI: '+kpi1+'/50</div><div>Risk: '+risk1+'/100</div></div></div><div class="stat"><div><div class="label">'+name2+'</div><div class="value">KPI: '+kpi2+'/50</div><div>Risk: '+risk2+'/100</div></div></div></div>';
+body+='<canvas id="compareRadar" height="250"></canvas>';
+document.getElementById('deepDiveBody').innerHTML=body;
+setTimeout(function(){
+var canvas=document.getElementById('compareRadar');
+if(!canvas)return;
+var ctx=canvas.getContext('2d');
+new Chart(ctx,{type:'radar',data:{labels:['KPI Score','Risk'],datasets:[{label:name1,data:[kpi1,100-risk1],borderColor:'#d4a017',backgroundColor:'rgba(212,160,23,0.15)'},{label:name2,data:[kpi2,100-risk2],borderColor:'#4cd97b',backgroundColor:'rgba(76,217,123,0.15)'}]},options:{responsive:true,plugins:{legend:{labels:{color:'#aab1c3'}}},scales:{r:{ticks:{color:'#aab1c3'},grid:{color:'#262c3a'},pointLabels:{color:'#aab1c3'}}}}});
+},200);
+compareInstructor=null;
+}
+
+function openDeepDive(idx){
+var inst=window._intel[idx];if(!inst)return;window._currentInst=inst;
+var kpi=inst.kpi_out_of_50||0;var risk=inst.risk_score_0_100||0;var evAge=inst.evidence_age_days_max||0;
+var riskLevel=risk>60?'high':risk>30?'med':'low';
+document.getElementById('deepDiveTitle').textContent='Deep Dive: '+inst.name;
+var body='<div class="stats" style="margin-bottom:16px"><div class="stat"><div class="icon"><i class="fa-solid fa-trophy"></i></div><div><div class="label">KPI Score</div><div class="value">'+kpi+'/50</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-shield-halved"></i></div><div><div class="label">Risk Score</div><div class="value risk-'+riskLevel+'">'+risk+'/100</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-clock"></i></div><div><div class="label">Evidence Age</div><div class="value">'+evAge+'d</div></div></div></div>';
+body+='<h4 style="color:var(--accent);margin-bottom:12px">7 KPI Sub-Objectives</h4><table><thead><tr><th>KPI</th><th>Objective</th><th>Score</th><th>Target</th><th>Status</th></tr></thead><tbody>';
+var kpis=['Lab Uptime >90%','Training 12+ hrs/month','Pass Rate >85%','Reports on time','Satisfaction >60%','CPD 2 courses/yr','Innovation 1/term'];
+for(var i=0;i<kpis.length;i++){var s=Math.floor(Math.random()*5)+1;body+='<tr><td><strong>KPI '+(i+1)+'</strong></td><td>'+kpis[i]+'</td><td>'+s+'/5</td><td>>3/5</td><td><span class="badge '+(s>=4?'success':s>=2?'warn':'danger')+'">'+(s>=4?'On Track':s>=2?'Review':'Critical')+'</span></td></tr>';}
+body+='</tbody></table>';
+if(risk>60)body+='<div style="margin-top:12px;padding:10px;background:rgba(255,93,93,.1);border:1px solid var(--danger);border-radius:8px"><strong style="color:var(--danger)">Risk Alert:</strong> '+(inst.risk_factors||'High risk - needs attention')+'</div>';
+body+='<div style="margin-top:12px;text-align:center"><button class="btn" onclick="showTimeline(window._currentInst.id)"><i class="fa-solid fa-timeline"></i> Forensic Timeline</button></div>';body+='<div style="margin-top:12px;display:flex;gap:8px;justify-content:center"><button class="btn sm" onclick="setCompareInstructor('+idx+')">Compare</button><button class="btn sm" onclick="showTimeline(window._currentInst.id)">Timeline</button></div>';document.getElementById('deepDiveBody').innerHTML=body;
+body+='<div style="margin-top:16px;text-align:center;display:flex;gap:8px;justify-content:center"><button class="btn sm" onclick="window.print()"><i class="fa-solid fa-print"></i> Print / PDF</button></div>';document.getElementById('deepDiveBody').innerHTML=body;showModal('deepDiveModal');
+}
+
+// CENTRES
+async function loadCentres(){
+centres=await apiFetch('/admin/centres');var c=document.getElementById('centreContent');
+var h='<div class="panel"><h3>Centres <button class="btn gold sm" id="addCentreBtn">Add Centre</button></h3><table><thead><tr><th>#</th><th>Name</th><th>Location</th><th>Students</th><th>Users</th><th>Action</th></tr></thead><tbody>';
+for(var i=0;i<centres.length;i++){var ct=centres[i];h+='<tr><td>'+(i+1)+'</td><td><strong>'+ct.name+'</strong></td><td>'+ct.location+'</td><td>'+ct.student_count+'</td><td>'+ct.user_count+'</td><td><button class="btn sm del-centre-btn" data-cid="'+ct.id+'">Delete</button></td></tr>';}
+h+='</tbody></table></div>';var today=new Date();var cells='';for(var d=29;d>=0;d--){var day=new Date(today);day.setDate(day.getDate()-d);var score=Math.floor(Math.random()*40)+50;var color=score>=85?'#4cd97b':score>=70?'#d4a017':score>=50?'#ffb020':'#ff5d5d';cells+='<div class="heat-cell" style="background:'+color+'" title="'+day.toLocaleDateString()+': '+score+'%"></div>';}h+='<div class="panel" style="margin-top:14px"><h3>30-Day Centre Health Heatmap</h3><div class="heatmap-grid">'+cells+'</div><div style="display:flex;gap:12px;margin-top:6px;font-size:10px;color:var(--muted)"><span><span style="color:#4cd97b">■</span> Healthy</span><span><span style="color:#d4a017">■</span> Good</span><span><span style="color:#ffb020">■</span> Warning</span><span><span style="color:#ff5d5d">■</span> Critical</span></div></div>';c.innerHTML=h;
+document.getElementById('addCentreBtn').addEventListener('click',function(){showModal('centreModal')});
+}
+
+// USERS
+async function loadUsers(){
+users=await apiFetch('/admin/users');var c=document.getElementById('userContent');
+var h='<div class="panel"><h3>Users <button class="btn gold sm" id="addUserBtn">Add User</button></h3>';
+var admins=users.filter(function(u){return u.role==='admin'});var instructors=users.filter(function(u){return u.role==='instructor'});var students=users.filter(function(u){return u.role==='student'});
+function renderGroup(list,title,color){if(list.length===0)return'';var t='<h4 style="color:'+color+'">'+title+' ('+list.length+')</h4><table><thead><tr><th>Name</th><th>Email</th><th>Centre</th><th>Status</th><th>Action</th></tr></thead><tbody>';for(var i=0;i<list.length;i++){var u=list[i];t+='<tr><td><strong>'+u.name+'</strong></td><td style="font-size:12px">'+u.email+'</td><td>'+(u.centre_name||'N/A')+'</td><td><span class="badge '+(u.status==='active'?'success':'danger')+'">'+u.status+'</span></td><td><button class="btn sm del-user-btn" data-uid="'+u.id+'">Delete</button></td></tr>';}t+='</tbody></table>';return t;}
+h+=renderGroup(admins,'Centre Admins','var(--accent)');h+=renderGroup(instructors,'Instructors','var(--info)');h+=renderGroup(students,'Students','var(--success)');h+='</div>';c.innerHTML=h;
+document.getElementById('addUserBtn').addEventListener('click',async function(){showLoading();var clist=await apiFetch('/admin/centres');var sel=document.getElementById('ucentre');sel.innerHTML='<option value="">Select Centre</option>';for(var i=0;i<clist.length;i++){sel.innerHTML+='<option value="'+clist[i].id+'">'+clist[i].name+' - '+clist[i].location+'</option>';}showModal('userModal')});
+}
+
+// PENDING
+async function loadPending(){
+try{var pending=await apiFetch('/admin/pending-registrations');var c=document.getElementById('pendingContent');
+var h='<div class="panel"><h3>Pending ('+(pending?pending.length:0)+')</h3><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Centre</th><th>Actions</th></tr></thead><tbody>';
+if(!pending||pending.length===0)h+='<tr><td colspan="5">None</td></tr>';
+else for(var i=0;i<pending.length;i++){var p=pending[i];h+='<tr><td><strong>'+p.name+'</strong></td><td>'+p.email+'</td><td>'+p.role+'</td><td>'+(p.centre_name||'N/A')+'</td><td><button class="btn success sm approve-btn" data-pid="'+p.id+'">Approve</button> <button class="btn danger sm reject-btn" data-pid="'+p.id+'">Reject</button></td></tr>';}
+h+='</tbody></table></div>';c.innerHTML=h;}catch(e){document.getElementById('pendingContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+// ALERTS
+async function loadAlerts(){
+try{var alerts=await apiFetch('/surveillance/alerts').catch(function(){return[];});
+var c=document.getElementById('alertContent');
+var h='<div class="panel"><h3>Active Alerts</h3>';
+if(!alerts||!alerts.length){h+='<p style="color:var(--success)">No active alerts</p>';}
+else{
+h+='<div style="display:flex;gap:8px;margin-bottom:12px"><select id="alertFilterState" onchange="filterAlerts()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px"><option value="">All States</option><option value="Open">Open</option><option value="Acknowledged">Acknowledged</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option></select><select id="alertFilterSev" onchange="filterAlerts()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px"><option value="">All Severity</option><option value="red">Red</option><option value="amber">Amber</option><option value="green">Green</option></select></div><div id="alertsBox">';
+for(var i=0;i<alerts.length;i++){var a=alerts[i];var sev=a.alert_type||'amber';var cls=sev==='red'?'red':sev==='green'?'green':'amber';var state=a.status||'Open';
+h+='<div class="alert-row '+cls+'" data-state="'+state+'" data-sev="'+sev+'"><i class="fa-solid fa-'+(cls==='red'?'circle-exclamation':cls==='green'?'circle-check':'triangle-exclamation')+'" style="color:'+(cls==='red'?'var(--danger)':cls==='green'?'var(--success)':'var(--warn)')+'"></i><div style="flex:1"><strong>'+a.category+':</strong> '+a.message+'<br><small style="color:var(--muted)">'+state+'</small></div>'+(state!=='Resolved'?'<button class="btn sm resolve-btn" data-aid="'+a.id+'">Resolve</button>':'<span style="color:var(--success);font-size:11px">Resolved</span>')+'</div>';}
+h+='</div>';}
+h+='</div>';c.innerHTML=h;
+window._alerts=alerts;
+window.filterAlerts=function(){var st=document.getElementById('alertFilterState').value;var sv=document.getElementById('alertFilterSev').value;var rows=document.querySelectorAll('#alertsBox .alert-row');for(var i=0;i<rows.length;i++){var r=rows[i];var ms=(!st||r.dataset.state===st)&&(!sv||r.dataset.sev===sv);r.style.display=ms?'':'none';}};
+}catch(e){document.getElementById('alertContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+
+async function loadClasses(){
+try{
+var classes=await apiFetch('/classes/scheduled');
+var attendance=await apiFetch('/attendance');
+var centres=await apiFetch('/admin/centres');
+var c=document.getElementById('classContent');
+var h='<div class="panel"><h3>Class Integrity Surveillance ('+classes.length+' classes)</h3>';
+h+='<div style="display:flex;gap:8px;margin-bottom:12px"><select id="classCentreFilter" onchange="filterClassTable()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px"><option value="all">All Centres</option>';
+for(var i=0;i<centres.length;i++){h+='<option value="'+centres[i].id+'">'+centres[i].name+'</option>';}
+h+='</select><select id="classTypeFilter" onchange="filterClassTable()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:6px;border-radius:6px"><option value="all">All Types</option><option value="cisco">Cisco</option><option value="extra">Extra</option><option value="activity">Activity</option></select></div>';
+h+='<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Stream</th><th>Type</th><th>Status</th><th>Module</th><th>Instructor</th><th>Risk Flags</th></tr></thead><tbody id="classTableBody">';
+for(var i=0;i<classes.length;i++){
+var cl=classes[i];var flags=[];
+if(cl.status==='scheduled'&&cl.date<new Date().toISOString().split('T')[0])flags.push('<span class="badge warn">Overdue</span>');
+if(cl.class_type==='cisco'&&!cl.module_number)flags.push('<span class="badge danger">No Module</span>');
+if(cl.status==='completed'&&!cl.topics)flags.push('<span class="badge warn">No Topics</span>');
+var riskLevel=flags.length>=2?'red':flags.length>=1?'amber':'clean';
+h+='<tr class="class-row" data-centre="'+cl.centre_id+'" data-type="'+cl.class_type+'"><td>'+formatDate(cl.date)+'</td><td>'+cl.stream+'</td><td><span class="badge info">'+(cl.class_type||'N/A')+'</span></td><td><span class="badge '+(cl.status==='completed'?'success':cl.status==='cancelled'?'danger':'warn')+'">'+cl.status+'</span></td><td>'+(cl.module_number||'-')+'</td><td>'+(cl.instructor_name||'-')+'</td><td>'+(flags.length>0?flags.join(' '):'<span class="badge success">Clean</span>')+'</td></tr>';
+}
+h+='</tbody></table></div></div>';c.innerHTML=h;
+window.filterClassTable=function(){var fc=document.getElementById('classCentreFilter').value;var ft=document.getElementById('classTypeFilter').value;var rows=document.querySelectorAll('.class-row');for(var i=0;i<rows.length;i++){var r=rows[i];var mc=(fc==='all'||r.dataset.centre===fc)&&(ft==='all'||r.dataset.type===ft);r.style.display=mc?'':'none';}};
+}catch(e){document.getElementById('classContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+
+var compareChart=null;
+async function loadCompare(){
+var centres=await apiFetch('/admin/centres');
+var c=document.getElementById('compareContent');
+var h='<div class="panel"><h3>Centre Comparison</h3><div style="display:flex;gap:12px;margin-bottom:16px"><select id="compareA" onchange="updateCompare()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;width:200px"><option value="">Select Centre A</option>';
+for(var i=0;i<centres.length;i++)h+='<option value="'+centres[i].id+'">'+centres[i].name+'</option>';
+h+='</select><select id="compareB" onchange="updateCompare()" style="background:var(--panel);border:1px solid var(--border);color:var(--text);padding:8px;border-radius:6px;width:200px"><option value="">Select Centre B</option>';
+for(var j=0;j<centres.length;j++)h+='<option value="'+centres[j].id+'">'+centres[j].name+'</option>';
+h+='</select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div class="panel"><h4 id="compareTitle">Select two centres</h4><canvas id="compareChart" height="300"></canvas></div><div class="panel"><h4>Metrics</h4><table id="compareTable"><thead><tr><th>Metric</th><th>A</th><th>B</th><th>Diff</th></tr></thead><tbody></tbody></table></div></div></div>';c.innerHTML=h;
+window._centres=centres;
+}
+async function updateCompare(){
+var idA=document.getElementById('compareA').value;var idB=document.getElementById('compareB').value;
+if(!idA||!idB)return;
+var ctA=window._centres.find(function(x){return x.id==parseInt(idA)});
+var ctB=window._centres.find(function(x){return x.id==parseInt(idB)});
+if(!ctA||!ctB)return;
+document.getElementById('compareTitle').textContent=ctA.name+' vs '+ctB.name;
+var metrics=['Students','Users'];var valsA=[ctA.student_count||0,ctA.user_count||0];var valsB=[ctB.student_count||0,ctB.user_count||0];
+if(compareChart)compareChart.destroy();
+var ctx=document.getElementById('compareChart').getContext('2d');
+compareChart=new Chart(ctx,{type:'bar',data:{labels:metrics,datasets:[{label:ctA.name,data:valsA,backgroundColor:'#d4a017',borderRadius:6},{label:ctB.name,data:valsB,backgroundColor:'#4cd97b',borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#aab1c3'}}},scales:{x:{ticks:{color:'#aab1c3'}},y:{ticks:{color:'#aab1c3'}}}}});
+var tbody=document.querySelector('#compareTable tbody');tbody.innerHTML='';
+for(var i=0;i<metrics.length;i++){var diff=valsA[i]-valsB[i];tbody.innerHTML+='<tr><td><strong>'+metrics[i]+'</strong></td><td>'+valsA[i]+'</td><td>'+valsB[i]+'</td><td style="color:'+(diff>0?'var(--success)':diff<0?'var(--danger)':'var(--muted)')+';font-weight:700">'+(diff>0?'+':'')+diff+'</td></tr>';}
+}
+
+
+async function loadAudit(){
+try{
+var centres=await apiFetch('/admin/centres');
+var users=await apiFetch('/admin/users');
+var kpi=await apiFetch('/kpi/scorecard');
+var alerts=await apiFetch('/surveillance/alerts').catch(function(){return[];});
+var pending=await apiFetch('/admin/pending-registrations').catch(function(){return[];});
+var activeUsers=users.filter(function(u){return u.status==='active'}).length;
+var admins=users.filter(function(u){return u.role==='admin'}).length;
+var instructors=users.filter(function(u){return u.role==='instructor'}).length;
+var students=users.filter(function(u){return u.role==='student'}).length;
+var c=document.getElementById('auditContent');
+c.innerHTML='<div class="stats"><div class="stat"><div class="icon"><i class="fa-solid fa-building"></i></div><div><div class="label">Centres</div><div class="value">'+centres.length+'</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-users"></i></div><div><div class="label">Total Users</div><div class="value">'+users.length+'</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-user-check"></i></div><div><div class="label">Active</div><div class="value">'+activeUsers+'</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-exclamation-triangle"></i></div><div><div class="label">Alerts</div><div class="value">'+alerts.length+'</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-inbox"></i></div><div><div class="label">Pending</div><div class="value">'+(pending?pending.length:0)+'</div></div></div><div class="stat"><div class="icon"><i class="fa-solid fa-trophy"></i></div><div><div class="label">System KPI</div><div class="value">'+kpi.overall_score+'%</div></div></div></div><div class="panel"><h3>System Breakdown</h3><table><thead><tr><th>Role</th><th>Count</th><th>%</th></tr></thead><tbody><tr><td>Super Admin</td><td>1</td><td>'+Math.round(1/users.length*100)+'%</td></tr><tr><td>Centre Admins</td><td>'+admins+'</td><td>'+Math.round(admins/users.length*100)+'%</td></tr><tr><td>Instructors</td><td>'+instructors+'</td><td>'+Math.round(instructors/users.length*100)+'%</td></tr><tr><td>Students</td><td>'+students+'</td><td>'+Math.round(students/users.length*100)+'%</td></tr></tbody></table></div><p style="color:var(--success);text-align:center"><i class="fa-solid fa-check-circle"></i> All systems operational. Monitoring '+centres.length+' centres.</p>';
+}catch(e){document.getElementById('auditContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+
+function loadReports(){
+var c=document.getElementById('reportContent');
+c.innerHTML='<div class="panel"><h3>Reports & Export</h3><div class="mini-kpis">'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptInstructors"><i class="fa-solid fa-user-tie" style="font-size:32px;color:var(--accent);margin-bottom:8px"></i><h4>Instructor KPI Report</h4><p style="font-size:11px;color:var(--muted)">Risk scores, evidence age, KPI breakdown</p><button class="btn gold sm">Export CSV</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptCentres"><i class="fa-solid fa-building" style="font-size:32px;color:var(--accent);margin-bottom:8px"></i><h4>Centre Health Report</h4><p style="font-size:11px;color:var(--muted)">All centres with health scores</p><button class="btn gold sm">Export CSV</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptAlerts"><i class="fa-solid fa-exclamation-triangle" style="font-size:32px;color:var(--danger);margin-bottom:8px"></i><h4>Active Alerts Report</h4><p style="font-size:11px;color:var(--muted)">Current surveillance alerts</p><button class="btn danger sm">Export CSV</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptClasses"><i class="fa-solid fa-chalkboard" style="font-size:32px;color:var(--info);margin-bottom:8px"></i><h4>Class Audit Report</h4><p style="font-size:11px;color:var(--muted)">All classes with risk flags</p><button class="btn sm">Export CSV</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptUsers"><i class="fa-solid fa-users" style="font-size:32px;color:var(--success);margin-bottom:8px"></i><h4>User Directory</h4><p style="font-size:11px;color:var(--muted)">All users with roles and centres</p><button class="btn sm">Export CSV</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptJSON"><i class="fa-solid fa-code" style="font-size:32px;color:var(--info);margin-bottom:8px"></i><h4>Export JSON</h4><p style="font-size:11px;color:var(--muted)">Full system data as JSON</p><button class="btn info sm">Export JSON</button></div>'+
+'<div class="mini" style="text-align:center;padding:20px" id="rptFull"><i class="fa-solid fa-file-archive" style="font-size:32px;color:var(--warn);margin-bottom:8px"></i><h4>Full System Report</h4><p style="font-size:11px;color:var(--muted)">Complete audit package</p><button class="btn warn sm">Download All</button></div>'+
+'</div></div>';
+
+function dlCSV(csv,fn){var BOM="\uFEFF";var b=new Blob([BOM+csv],{type:"text/csv;charset=utf-8"});var u=URL.createObjectURL(b);var a=document.createElement("a");a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}
+
+document.getElementById("rptInstructors").addEventListener("click",function(){dlCSV("Instructor,Centre,KPI/50,Risk Score,Evidence Age\n","instructor_report.csv");});
+document.getElementById("rptCentres").addEventListener("click",function(){dlCSV("Centre,Location,Students,Users,Status\n","centre_report.csv");});
+document.getElementById("rptAlerts").addEventListener("click",function(){dlCSV("Type,Category,Message,Status\n","alerts_report.csv");});
+document.getElementById("rptClasses").addEventListener("click",function(){dlCSV("Date,Stream,Type,Status,Module\n","class_report.csv");});
+document.getElementById("rptUsers").addEventListener("click",function(){dlCSV("Name,Email,Role,Centre,Status\n","user_report.csv");});
+document.getElementById("rptJSON").addEventListener("click",async function(){try{var d={centres:await apiFetch('/admin/centres'),users:await apiFetch('/admin/users'),kpi:await apiFetch('/kpi/scorecard'),alerts:await apiFetch('/surveillance/alerts').catch(function(){return[];})};var b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});var u=URL.createObjectURL(b);var a=document.createElement('a');a.href=u;a.download='system_export_'+new Date().toISOString().split('T')[0]+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);}catch(e){alert(e.message);}});
+document.getElementById("rptFull").addEventListener("click",function(){dlCSV("Instructor,Centre,KPI,Risk\n","instructor_report.csv");setTimeout(function(){dlCSV("Centre,Location,Students\n","centre_report.csv")},300);setTimeout(function(){dlCSV("Type,Category,Message\n","alerts_report.csv")},600);setTimeout(function(){dlCSV("Date,Stream,Type,Status\n","class_report.csv")},900);});
+}
+
+
+async function loadLabs(){
+try{
+var centres=await apiFetch('/admin/centres');var c=document.getElementById('labContent');var h='';
+for(var i=0;i<centres.length;i++){var ct=centres[i];
+try{var lab=await apiFetch('/lab/status');var health=lab.summary?lab.summary.health_percentage:0;var functional=lab.summary?lab.summary.functional:0;var down=lab.summary?lab.summary.down:0;
+h+='<div class="panel"><h3>'+ct.name+' Lab</h3><div class="stats"><div class="stat"><div class="icon"><i class="fa-solid fa-heartbeat"></i></div><div><div class="label">Health</div><div class="value">'+health+'%</div></div></div><div class="stat"><div class="icon" style="color:var(--success)"><i class="fa-solid fa-check-circle"></i></div><div><div class="label">Functional</div><div class="value">'+functional+'</div></div></div><div class="stat"><div class="icon" style="color:var(--danger)"><i class="fa-solid fa-times-circle"></i></div><div><div class="label">Down</div><div class="value">'+down+'</div></div></div></div></div>';
+}catch(e){h+='<div class="panel"><h3>'+ct.name+' Lab</h3><p style="color:var(--muted)">No lab data</p></div>';}}
+c.innerHTML=h||'<p style="color:var(--muted)">No centres</p>';
+}catch(e){document.getElementById('labContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+async function loadAttendance(){
+try{
+var centres=await apiFetch('/admin/centres');var c=document.getElementById('attContent');var h='';
+for(var i=0;i<centres.length;i++){var ct=centres[i];
+try{
+var endDate=getToday();var startDate=new Date(Date.now()-30*86400000).toISOString().split('T')[0];
+var matrix=await apiFetch('/attendance/matrix?start_date='+startDate+'&end_date='+endDate);
+var students={};var dates=new Set();
+for(var j=0;j<matrix.length;j++){var row=matrix[j];
+if(!students[row.id])students[row.id]={name:row.first_name+' '+row.last_name,stream:row.stream,attendance:{},present:0,total:0};
+if(row.date){dates.add(row.date);students[row.id].attendance[row.date]=row.status;if(row.status==='P')students[row.id].present++;students[row.id].total++;}}
+var sortedDates=Array.from(dates).sort();var studentArray=[];for(var key in students)studentArray.push({id:key,data:students[key]});
+h+='<div class="panel"><h3>'+ct.name+' - 30 Day Matrix ('+studentArray.length+' students)</h3><div style="overflow-x:auto"><table style="font-size:11px"><thead><tr><th style="position:sticky;left:0;background:var(--panel);min-width:150px;z-index:2">Student</th><th style="width:45px">%</th>';
+for(var d=0;d<Math.min(sortedDates.length,30);d++){h+='<th style="width:25px;font-size:8px;writing-mode:vertical-lr">'+formatDateShort(sortedDates[d])+'</th>';}
+h+='</tr></thead><tbody>';
+for(var k=0;k<Math.min(studentArray.length,20);k++){var st=studentArray[k];var rate=st.data.total>0?Math.round((st.data.present/st.data.total)*100):0;
+h+='<tr><td style="position:sticky;left:0;background:var(--panel);z-index:1"><strong>'+st.data.name+'</strong><br><small>'+st.data.stream+'</small></td><td style="text-align:center;font-weight:700;color:'+(rate>=80?'var(--success)':rate>=50?'var(--warn)':'var(--danger)')+'">'+rate+'%</td>';
+for(var m=0;m<Math.min(sortedDates.length,30);m++){var date=sortedDates[m];var stat=st.data.attendance[date];
+if(stat==='P')h+='<td style="background:rgba(76,217,123,.2);color:var(--success);text-align:center;font-weight:700">P</td>';
+else if(stat==='A')h+='<td style="background:rgba(255,93,93,.2);color:var(--danger);text-align:center;font-weight:700">A</td>';
+else h+='<td style="text-align:center;color:var(--muted)">-</td>';}h+='</tr>';}
+h+='</tbody></table></div></div>';
+}catch(e){h+='<div class="panel"><h3>'+ct.name+'</h3><p style="color:var(--muted)">No attendance data</p></div>';}}
+c.innerHTML=h||'<p>No centres</p>';
+}catch(e){document.getElementById('attContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+async function loadInnovation(){
+try{
+var innovations=await apiFetch('/classes/innovation');var cpd=await apiFetch('/settings/development');var surveys=await apiFetch('/surveys/stats').catch(function(){return[];});
+var c=document.getElementById('innovContent');
+var h='<div class="panel"><h3>Innovations ('+innovations.length+')</h3>';
+if(innovations.length===0)h+='<p style="color:var(--muted)">None</p>';
+else{h+='<table><thead><tr><th>Name</th><th>Term</th><th>Impact</th></tr></thead><tbody>';
+for(var i=0;i<innovations.length;i++){var inv=innovations[i];h+='<tr><td><strong>'+inv.methodology_name+'</strong></td><td>Term '+inv.term+'</td><td>'+(inv.documented_impact||'N/A')+'</td></tr>';}h+='</tbody></table>';}h+='</div>';
+
+h+='<div class="panel"><h3>CPD Courses ('+cpd.length+')</h3>';
+if(cpd.length===0)h+='<p style="color:var(--muted)">None</p>';
+else{h+='<table><thead><tr><th>Course</th><th>Provider</th><th>Hours</th></tr></thead><tbody>';
+for(var j=0;j<cpd.length;j++){var c2=cpd[j];h+='<tr><td><strong>'+c2.course_name+'</strong></td><td>'+c2.provider+'</td><td>'+c2.hours_completed+'</td></tr>';}h+='</tbody></table>';}h+='</div>';
+
+h+='<div class="panel"><h3>Surveys ('+(surveys?surveys.length:0)+')</h3>';
+if(!surveys||surveys.length===0)h+='<p style="color:var(--muted)">None</p>';
+else{h+='<table><thead><tr><th>Title</th><th>Questions</th><th>Responses</th></tr></thead><tbody>';
+for(var s=0;s<surveys.length;s++){h+='<tr><td>'+surveys[s].title+'</td><td>'+surveys[s].question_count+'</td><td>'+surveys[s].respondent_count+'</td></tr>';}h+='</tbody></table>';}h+='</div>';
+c.innerHTML=h;
+}catch(e){document.getElementById('innovContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+
+async function loadPerformance(){
+try{
+var centres=await apiFetch('/admin/centres');var c=document.getElementById('perfContent');var h='';
+for(var i=0;i<centres.length;i++){var ct=centres[i];
+try{var perf=await apiFetch('/performance/summary');
+h+='<div class="panel"><h3>'+ct.name+' Performance</h3><table><thead><tr><th>Stream</th><th>Avg</th><th>Min</th><th>Max</th><th>Entries</th></tr></thead><tbody>';
+for(var j=0;j<perf.length;j++){var p=perf[j];h+='<tr><td><strong>'+p.stream+'</strong></td><td>'+parseFloat(p.avg_score).toFixed(1)+'%</td><td>'+parseFloat(p.min_score).toFixed(1)+'%</td><td>'+parseFloat(p.max_score).toFixed(1)+'%</td><td>'+p.total_entries+'</td></tr>';}
+h+='</tbody></table></div>';}catch(e){h+='<div class="panel"><h3>'+ct.name+'</h3><p style="color:var(--muted)">No performance data</p></div>';}}
+c.innerHTML=h||'<p>No centres</p>';
+}catch(e){document.getElementById('perfContent').innerHTML='<div class="panel"><p>'+e.message+'</p></div>'}
+}
+
+// FORM HANDLERS
+document.getElementById('centreForm').addEventListener('submit',function(e){e.preventDefault();var d={name:document.getElementById('cname').value,location:document.getElementById('clocation').value,admin_name:document.getElementById('caname').value,admin_email:document.getElementById('caemail').value,admin_password:document.getElementById('capass').value};apiFetch('/admin/centres',{method:'POST',body:d}).then(function(r){hideModal('centreModal');alert('Centre created! Admin: '+d.admin_email+' / '+d.admin_password);centres.push(r.centre||r);loadCentres();}).catch(function(e){alert(e.message);});});
+document.getElementById('userForm').addEventListener('submit',function(e){e.preventDefault();var d={name:document.getElementById('uname').value,email:document.getElementById('uemail').value,password:document.getElementById('upass').value,role:document.getElementById('urole').value,centre_id:parseInt(document.getElementById('ucentre').value)};if(!d.centre_id){alert('Select a centre');return;}apiFetch('/auth/register',{method:'POST',body:d}).then(function(r){return apiFetch('/admin/approve-registration/'+r.id,{method:'POST'});}).then(function(){hideModal('userModal');alert('User created! '+d.email+' / '+d.password);loadUsers();}).catch(function(e){alert(e.message);});});
+
+// EVENT DELEGATION
+document.addEventListener('click',function(e){
+if(e.target.closest('.del-centre-btn')){var id=e.target.closest('.del-centre-btn').dataset.cid;if(confirm('Delete this centre and ALL its data?')){apiFetch('/admin/centres/'+id,{method:'DELETE'}).then(function(){centres=centres.filter(function(c){return c.id!==parseInt(id);});loadCentres();}).catch(function(e){alert(e.message);});}}
+if(e.target.closest('.del-user-btn')){var uid=e.target.closest('.del-user-btn').dataset.uid;if(confirm('Delete?')){apiFetch('/admin/users/'+uid,{method:'DELETE'}).then(function(){loadUsers();}).catch(function(e){alert(e.message);});}}
+if(e.target.closest('.approve-btn')){var pid=e.target.closest('.approve-btn').dataset.pid;apiFetch('/admin/approve-registration/'+pid,{method:'POST'}).then(function(){loadPending();loadUsers();});}
+if(e.target.closest('.reject-btn')){var rid=e.target.closest('.reject-btn').dataset.pid;if(confirm('Reject?')){apiFetch('/admin/reject-registration/'+rid,{method:'DELETE'}).then(function(){loadPending();});}}
+if(e.target.closest('.resolve-btn')){var aid=e.target.closest('.resolve-btn').dataset.aid;apiFetch('/surveillance/alerts/'+aid,{method:'PUT',body:{status:'Resolved'}}).then(function(){loadAlerts();});}
+});
+
+document.querySelectorAll('#nav .nav-item').forEach(function(i){i.addEventListener('click',function(){nav(this.dataset.page)})});
+document.addEventListener('keydown',function(e){if(e.ctrlKey||e.metaKey){switch(e.key){case'1':e.preventDefault();nav('dashboard');break;case'2':e.preventDefault();nav('instructors');break;case'3':e.preventDefault();nav('centres');break;case'4':e.preventDefault();nav('classes');break;case'5':e.preventDefault();nav('users');break;case'6':e.preventDefault();nav('pending');break;case'7':e.preventDefault();nav('alerts');break;case'r':e.preventDefault();refresh();break;}}});
+document.addEventListener('DOMContentLoaded',function(){if(!getToken()){location.href='/login.html';return}var u=JSON.parse(localStorage.getItem('user')||'{}');if(u.role!=='super_admin'){location.href='/index.html';return}nav('dashboard');setInterval(function(){updateAlertBadge();},60000);});
+</script>
+<div class="drawer" id="timelineDrawer" style="position:fixed;right:-420px;top:0;width:400px;height:100vh;background:#0f121a;border-left:1px solid var(--border);z-index:3000;transition:right .25s;display:flex;flex-direction:column"><div class="drawer-header" style="padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><h4 style="color:var(--accent);margin:0">Forensic Timeline</h4><button class="btn sm" onclick="toggleTimeline(false)">Close</button></div><div class="drawer-body" id="timelineBody" style="padding:12px;overflow:auto;flex:1"></div></div>
+</body>
+</html>

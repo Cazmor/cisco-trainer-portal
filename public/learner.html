@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cisco Trainer - Student Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css">
+    <style>
+        .student-welcome { text-align: center; padding: 40px; }
+        .student-welcome i { font-size: 64px; color: #00b4d8; margin-bottom: 20px; }
+        .student-welcome h2 { font-size: 28px; color: #1e293b; margin-bottom: 10px; }
+        .student-welcome p { color: #64748b; margin-bottom: 30px; }
+        .student-info { background: #f0f4f8; border-radius: 12px; padding: 24px; text-align: left; max-width: 400px; margin: 0 auto; }
+        .student-info p { margin-bottom: 8px; }
+        .student-info strong { color: #1e293b; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-network-wired"></i>
+                    <h1>Cisco Trainer</h1>
+                </div>
+                <p>Student Portal</p>
+            </div>
+            
+            <div class="student-welcome">
+                <i class="fas fa-user-graduate"></i>
+                <h2>Welcome, Student!</h2>
+                <p>Your learning journey starts here</p>
+                
+                <div class="student-info" id="studentInfo">
+                    <p><strong>Name:</strong> <span id="studentName">Loading...</span></p>
+                    <p><strong>Email:</strong> <span id="studentEmail">Loading...</span></p>
+                </div>
+                
+                <button onclick="logout()" class="btn-login" style="margin-top: 20px; background: #ef4444;">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+        
+        async function loadStudentInfo() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                
+                if (!response.ok) {
+                    logout();
+                    return;
+                }
+                
+                const user = await response.json();
+                document.getElementById('studentName').textContent = user.name;
+                document.getElementById('studentEmail').textContent = user.email;
+                
+            } catch (error) {
+                console.error('Error loading student info:', error);
+            }
+        }
+        
+        loadStudentInfo();
+    </script>
+</body>
+</html>

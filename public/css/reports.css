@@ -1,0 +1,134 @@
+.reports-container {
+    max-width: 1200px;
+}
+
+.reports-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.report-card {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.report-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.report-date {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.report-status {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.report-section {
+    margin-bottom: 16px;
+}
+
+.report-section h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cisco-blue);
+    margin-bottom: 8px;
+}
+
+.report-section p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.report-form {
+    max-width: 800px;
+}
+
+.report-form .form-group {
+    margin-bottom: 20px;
+}
+
+.report-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.report-form input[type="text"],
+.report-form input[type="date"],
+.report-form textarea,
+.report-form select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.report-form textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.report-form input:focus,
+.report-form textarea:focus,
+.report-form select:focus {
+    outline: none;
+    border-color: var(--cisco-blue);
+}
+
+.week-selector {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.maintenance-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.maintenance-stat {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.maintenance-stat h3 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.maintenance-stat p {
+    font-size: 13px;
+    color: var(--text-secondary);
+}

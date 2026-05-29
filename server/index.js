@@ -1,0 +1,103 @@
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const path = require('path');
+require('dotenv').config();
+
+const { testConnection } = require('./database/db');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static files
+app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const studentsRoutes = require('./routes/students');
+const attendanceRoutes = require('./routes/attendance');
+const performanceRoutes = require('./routes/performance');
+const labRoutes = require('./routes/lab');
+const classesRoutes = require('./routes/classes');
+const reportsRoutes = require('./routes/reports');
+const aiRoutes = require('./routes/ai');
+const kpiRoutes = require('./routes/kpi');
+const settingsRoutes = require('./routes/settings');
+const surveysRoutes = require('./routes/surveys');
+const curriculumRoutes = require('./routes/curriculum');
+const surveillanceRoutes = require('./routes/surveillance');
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/students', studentsRoutes);
+app.use('/api/attendance', attendanceRoutes);
+app.use('/api/performance', performanceRoutes);
+app.use('/api/lab', labRoutes);
+app.use('/api/classes', classesRoutes);
+app.use('/api/reports', reportsRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/kpi', kpiRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/surveys', surveysRoutes);
+app.use('/api/curriculum', curriculumRoutes);
+app.use('/api/surveillance', surveillanceRoutes);
+
+// Serve login page as default
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
+});
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).json({ 
+        error: 'Internal server error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+});
+
+// Start server - binds to 0.0.0.0 for Render compatibility
+app.listen(PORT, '0.0.0.0', async () => {
+    console.log('');
+    console.log('========================================');
+    console.log('  CISCO TRAINER PROGRESS TRACKING SYSTEM');
+    console.log('========================================');
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Open http://localhost:${PORT} in your browser`);
+    console.log('');
+    
+    // Test database connection on startup
+    const dbConnected = await testConnection();
+    if (dbConnected) {
+        console.log('Database: Connected successfully');
+    } else {
+        console.log('Database: Connection failed - check PostgreSQL settings');
+    }
+    console.log('========================================');
+});
+
+module.exports = app;

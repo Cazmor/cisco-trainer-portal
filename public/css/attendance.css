@@ -1,0 +1,151 @@
+.attendance-container {
+    max-width: 1400px;
+}
+
+.attendance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.date-picker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.date-picker input[type="date"] {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.date-picker input[type="date"]:focus {
+    outline: none;
+    border-color: var(--cisco-blue);
+}
+
+.attendance-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.attendance-stat {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.attendance-stat h3 {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--cisco-blue);
+    margin-bottom: 4px;
+}
+
+.attendance-stat p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.attendance-table {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.attendance-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attendance-table td {
+    vertical-align: middle;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-present {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-absent {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.quick-actions button {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.mark-present {
+    background: var(--success);
+    color: white;
+}
+
+.mark-absent {
+    background: var(--danger);
+    color: white;
+}
+
+.matrix-view {
+    overflow-x: auto;
+}
+
+.matrix-table th:first-child,
+.matrix-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--bg-secondary);
+    z-index: 1;
+    min-width: 200px;
+}
+
+.matrix-table .present-cell {
+    background: #d1fae5;
+    color: #065f46;
+    text-align: center;
+    font-weight: 600;
+}
+
+.matrix-table .absent-cell {
+    background: #fee2e2;
+    color: #991b1b;
+    text-align: center;
+    font-weight: 600;
+}

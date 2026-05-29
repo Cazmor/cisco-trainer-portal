@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cisco Trainer - Register</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css">
+    <style>
+        .login-card { max-width: 500px; }
+        .form-group select { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 15px; color: #1e293b; background: #f8fafc; cursor: pointer; }
+        .form-group select:focus { outline: none; border-color: #00b4d8; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-network-wired"></i>
+                    <h1>Cisco Trainer</h1>
+                </div>
+                <p>Create Your Account</p>
+            </div>
+            
+            <form id="registerForm" class="login-form">
+                <div class="form-group">
+                    <label for="name"><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" name="phone" placeholder="Enter your phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required minlength="6">
+                </div>
+                
+                <div class="form-group">
+                    <label for="centre_id"><i class="fas fa-building"></i> Training Centre</label>
+                    <select id="centre_id" name="centre_id" required>
+                        <option value="">Select a centre</option>
+                        <option value="1">Nairobi Training Centre</option>
+                        <option value="2">Mombasa Training Centre</option>
+                        <option value="3">Kisumu Training Centre</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="role"><i class="fas fa-briefcase"></i> Role</label>
+                    <select id="role" name="role" required>
+                        <option value="instructor">Instructor</option>
+                        <option value="student">Student</option>
+                    </select>
+                </div>
+                
+                <div id="message" style="display: none; padding: 12px; border-radius: 8px;"></div>
+                
+                <button type="submit" class="btn-login" id="submitBtn">
+                    <i class="fas fa-user-plus"></i> Register
+                </button>
+                
+                <div style="text-align: center;">
+                    <p>Already have an account? <a href="login.html" style="color: #00b4d8;">Sign In</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value;
+            const centre_id = document.getElementById('centre_id').value;
+            const role = document.getElementById('role').value;
+            const messageDiv = document.getElementById('message');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (!name || !email || !password || !centre_id || !role) {
+                showMessage('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, password, centre_id: parseInt(centre_id), role })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Registration submitted successfully! Please wait for admin approval.', 'success');
+                    document.getElementById('registerForm').reset();
+                } else {
+                    showMessage(data.error || 'Registration failed', 'error');
+                }
+            } catch (error) {
+                showMessage('Network error. Please try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register';
+            }
+        });
+        
+        function showMessage(msg, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = msg;
+            messageDiv.style.display = 'block';
+            messageDiv.style.background = type === 'success' ? '#d1fae5' : '#fee2e2';
+            messageDiv.style.color = type === 'success' ? '#065f46' : '#991b1b';
+            messageDiv.style.border = '1px solid ' + (type === 'success' ? '#a7f3d0' : '#fecaca');
+        }
+    </script>
+</body>
+</html>
