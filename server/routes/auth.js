@@ -8,25 +8,40 @@ const { authenticateToken, generateToken } = require('../middleware/auth');
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log("Login attempt for:", email);
+        
         if (!email || !password) {
             return res.status(400).json({ error: 'Email and password are required' });
         }
+        
         const result = await query(
             "SELECT id, name, email, password_hash, phone, centre_id, role, status, photo_url FROM users WHERE email = $1",
             [email]
         );
+        
+        console.log("Query result rows:", result.rows.length);
+        
         if (result.rows.length === 0) {
+            console.log("User not found:", email);
             return res.status(401).json({ error: 'Invalid email or password' });
         }
+        
         const user = result.rows[0];
+        console.log("User found, role:", user.role, "status:", user.status);
+        
         if (user.status !== 'active') {
             return res.status(403).json({ error: 'Account is not active. Please contact administrator.' });
         }
+        
         const validPassword = await bcrypt.compare(password, user.password_hash);
+        console.log("Password valid:", validPassword);
+        
         if (!validPassword) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
+        
         const token = generateToken(user);
+        
         res.json({
             token,
             user: {
@@ -36,8 +51,14 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('=== LOGIN ERROR DETAILS ===');
+        console.error('Message:', error.message);
+        console.error('Stack:', error.stack);
+        console.error('Code:', error.code);
+        res.status(500).json({ 
+            error: 'Internal server error', 
+            details: error.message 
+        });
     }
 });
 
@@ -86,7 +107,7 @@ router.post('/forgot-password', async (req, res) => {
         );
         res.json({
             message: 'Password reset link generated',
-            resetLink: 'http://localhost:3000/reset-password.html?token=' + token,
+            resetLink: 'https://cisco-trainer-portal-1.onrender.com/reset-password.html?token=' + token,
             token: token
         });
     } catch (error) {
