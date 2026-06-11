@@ -294,5 +294,6 @@ document.getElementById('timetableForm').addEventListener('submit',function(e){e
 document.querySelectorAll('#nav .nav-item').forEach(function(i){i.addEventListener('click',function(){nav(this.dataset.page)})});
 document.addEventListener('DOMContentLoaded',function(){if(!getToken()){location.href='/login.html';return}var u=getUser();if(!u||u.role!=='admin'){location.href='/index.html';return}loadCentreInfo();nav('dashboard')});
 </script>
-</body>
+    <script src="/js/session.js"></script>`n</body>
 </html>
+

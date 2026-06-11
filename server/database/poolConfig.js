@@ -4,6 +4,7 @@ const makeDbConfig = () => {
   const useConnectionString = Boolean(process.env.DATABASE_URL);
   const sslMode = (process.env.DB_SSL || '').toLowerCase();
   const hostForSsl = process.env.DATABASE_URL || process.env.DB_HOST || '';
+  
   const config = useConnectionString
     ? { connectionString: process.env.DATABASE_URL }
     : {
@@ -16,13 +17,19 @@ const makeDbConfig = () => {
 
   config.max = 20;
   config.idleTimeoutMillis = 30000;
-  config.connectionTimeoutMillis = 2000;
+  config.connectionTimeoutMillis = 5000;
 
+  const isRender = hostForSsl.includes('render.com') || 
+                   hostForSsl.includes('onrender.com') ||
+                   process.env.NODE_ENV === 'production';
+  
   if (
     sslMode === 'true' ||
     sslMode === 'require' ||
-    (!sslMode && /supabase|pooler/i.test(hostForSsl))
+    sslMode === '1' ||
+    isRender
   ) {
+    console.log('SSL enabled for database connection');
     config.ssl = { rejectUnauthorized: false };
   }
 

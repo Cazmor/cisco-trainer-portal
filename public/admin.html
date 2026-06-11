@@ -488,5 +488,6 @@ document.addEventListener('keydown',function(e){if(e.ctrlKey||e.metaKey){switch(
 document.addEventListener('DOMContentLoaded',function(){if(!getToken()){location.href='/login.html';return}var u=JSON.parse(localStorage.getItem('user')||'{}');if(u.role!=='super_admin'){location.href='/index.html';return}nav('dashboard');setInterval(function(){updateAlertBadge();},60000);});
 </script>
 <div class="drawer" id="timelineDrawer" style="position:fixed;right:-420px;top:0;width:400px;height:100vh;background:#0f121a;border-left:1px solid var(--border);z-index:3000;transition:right .25s;display:flex;flex-direction:column"><div class="drawer-header" style="padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between"><h4 style="color:var(--accent);margin:0">Forensic Timeline</h4><button class="btn sm" onclick="toggleTimeline(false)">Close</button></div><div class="drawer-body" id="timelineBody" style="padding:12px;overflow:auto;flex:1"></div></div>
-</body>
+    <script src="/js/session.js"></script>`n</body>
 </html>
+
