@@ -10,7 +10,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.disable('x-powered-by');
+
+const allowedOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+const corsOptions = allowedOrigins.length > 0 ? { origin: allowedOrigins } : undefined;
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -100,8 +108,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server - binds to 0.0.0.0 for Render compatibility
-app.listen(PORT, '0.0.0.0', async () => {
+const startServer = () => app.listen(PORT, '0.0.0.0', async () => {
     console.log('');
     console.log('========================================');
     console.log('  CISCO TRAINER PROGRESS TRACKING SYSTEM');
@@ -121,4 +128,10 @@ app.listen(PORT, '0.0.0.0', async () => {
     console.log('========================================');
 });
 
+// Start server - binds to 0.0.0.0 for Render/container compatibility
+if (require.main === module) {
+    startServer();
+}
+
 module.exports = app;
+module.exports.startServer = startServer;

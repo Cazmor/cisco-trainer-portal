@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+instructor-portal
+instructor-portal/node_modules
+npm-debug.log
+.env
+.env.*
+.docker-tmp
+uploads
+*.log
+.cache
+dist

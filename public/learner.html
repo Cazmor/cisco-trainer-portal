@@ -68,9 +68,11 @@
                     return;
                 }
                 
-                const user = await response.json();
-                document.getElementById('studentName').textContent = user.name;
-                document.getElementById('studentEmail').textContent = user.email;
+                const text = await response.text();
+                let user = null;
+                try { user = text ? JSON.parse(text) : null; } catch (err) { user = null; }
+                document.getElementById('studentName').textContent = user && user.name ? user.name : '';
+                document.getElementById('studentEmail').textContent = user && user.email ? user.email : '';
                 
             } catch (error) {
                 console.error('Error loading student info:', error);

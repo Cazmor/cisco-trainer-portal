@@ -5,13 +5,6 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const bcrypt = require('bcryptjs');
 
 router.use(authenticateToken);
-router.get('/centres/:id', async (req, res) => {
-    try {
-        var result = await query('SELECT * FROM centres WHERE id = $1', [req.params.id]);
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(result.rows[0]);
-    } catch (e) { res.status(500).json({ error: e.message }); }
-});
 router.use(requireRole('super_admin', 'admin'));
 
 router.get('/centres', async (req, res) => {
@@ -134,31 +127,6 @@ router.get('/dashboard', async (req, res) => {
         console.error('Dashboard error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
-});
-
-
-router.get('/intel', async (req, res) => {
-    try {
-        const type = req.query.type;
-        if (type === 'instructors') {
-            const result = await query("SELECT u.id, u.name, u.email, u.centre_id, c.name as centre_name FROM users u LEFT JOIN centres c ON u.centre_id = c.id WHERE u.role = $1", ['instructor']);
-            const instructors = [];
-            for (const inst of result.rows) {
-                instructors.push({ id: inst.id, name: inst.name, email: inst.email, centre_id: inst.centre_id, centre_name: inst.centre_name, kpi_score: 30, risk_score: 25, evidence_age_days: 10 });
-            }
-            res.json(instructors);
-        } else if (type === 'alerts') {
-            const alerts = await query("SELECT * FROM surveillance_alerts WHERE status != 'resolved' ORDER BY created_at DESC LIMIT 50");
-            res.json(alerts.rows);
-        } else { res.json([]); }
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-router.post('/intel/alerts', requireRole('super_admin'), async (req, res) => {
-    try {
-        const result = await query("INSERT INTO surveillance_alerts (alert_type, category, message, instructor_id, centre_id) VALUES ($1, $2, $3, $4, $5) RETURNING *", [req.body.alert_type, req.body.category, req.body.message, req.body.instructor_id, req.body.centre_id]);
-        res.status(201).json(result.rows[0]);
-    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 

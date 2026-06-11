@@ -1,16 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const { Pool } = require('pg');
+const { makeDbConfig } = require('./poolConfig');
 const bcrypt = require('bcryptjs');
 require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-});
+const pool = new Pool(makeDbConfig());
 
 async function setupDatabase() {
     const client = await pool.connect();

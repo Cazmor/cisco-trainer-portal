@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+    image: instructor-portal:local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-}
+      DB_HOST: ${DB_HOST:-}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${DB_NAME:-}
+      DB_USER: ${DB_USER:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      DB_SSL: ${DB_SSL:-true}
+      JWT_SECRET: ${JWT_SECRET:-replace-this-before-production}
+      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      UPLOAD_PATH: /app/uploads
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - uploads_data:/app/uploads
+    restart: unless-stopped
+
+  postgres:
+    profiles:
+      - local-db
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cisco_tracker}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-cisco_tracker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads_data:

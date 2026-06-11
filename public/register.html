@@ -103,13 +103,15 @@
                     body: JSON.stringify({ name, email, phone, password, centre_id: parseInt(centre_id), role })
                 });
                 
-                const data = await response.json();
-                
+                const text = await response.text();
+                let data = null;
+                try { data = text ? JSON.parse(text) : null; } catch (err) { data = null; }
+
                 if (response.ok) {
                     showMessage('Registration submitted successfully! Please wait for admin approval.', 'success');
                     document.getElementById('registerForm').reset();
                 } else {
-                    showMessage(data.error || 'Registration failed', 'error');
+                    showMessage((data && data.error) || 'Registration failed', 'error');
                 }
             } catch (error) {
                 showMessage('Network error. Please try again.', 'error');

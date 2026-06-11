@@ -1,19 +1,8 @@
 const { Pool } = require('pg');
+const { makeDbConfig } = require('./poolConfig');
 require('dotenv').config();
 
-const pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    database: process.env.DB_NAME,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
-  ssl: {
-    rejectUnauthorized: false
-  },
-});
+const pool = new Pool(makeDbConfig());
 
 pool.on('error', (err, client) => {
     console.error('Unexpected error on idle client', err);
@@ -30,6 +19,19 @@ const query = async (text, params) => {
     const duration = Date.now() - start;
     console.log('Executed query', { text: text.substring(0, 50), duration, rows: res.rowCount });
     return res;
+};
+
+const testConnection = async () => {
+    const client = await pool.connect();
+    try {
+        await client.query('SELECT 1');
+        return true;
+    } catch (err) {
+        console.error('Database connection test failed:', err.message);
+        return false;
+    } finally {
+        client.release();
+    }
 };
 
 const getClient = async () => {
@@ -61,5 +63,6 @@ const getClient = async () => {
 module.exports = {
     query,
     getClient,
-    pool
+    pool,
+    testConnection
 };
