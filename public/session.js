@@ -1,6 +1,6 @@
 // Session management with auto-logout on inactivity
 let inactivityTimer;
-const INACTIVITY_TIME = 1 * 60 * 1000; // 30 minutes
+const INACTIVITY_TIME = 30 * 60 * 1000; // 30 minutes
 
 function resetInactivityTimer() {
     const token = localStorage.getItem('token');
@@ -10,23 +10,19 @@ function resetInactivityTimer() {
         clearTimeout(inactivityTimer);
     }
     
-    inactivityTimer = setTimeout(function() {
-        const msg = 'Session expired due to inactivity. Please login again.';
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        alert(msg);
-        window.location.href = '/login.html';
+    inactivityTimer = setTimeout(() => {
+        logout('Session expired due to inactivity. Please login again.');
     }, INACTIVITY_TIME);
 }
 
 function startSessionTracking() {
     if (!localStorage.getItem('token')) return;
     
-    var events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'];
-    for (var i = 0; i < events.length; i++) {
-        document.removeEventListener(events[i], resetInactivityTimer);
-        document.addEventListener(events[i], resetInactivityTimer);
-    }
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click', 'mousemove'];
+    events.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer);
+        document.addEventListener(event, resetInactivityTimer);
+    });
     resetInactivityTimer();
 }
 
@@ -50,14 +46,14 @@ window.logout = function(message) {
 
 // Check auth on page load
 function checkAuth() {
-    var token = localStorage.getItem('token');
-    var user = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
     
-    var publicPages = ['login.html', 'register.html', 'forgot-password.html'];
-    var currentPage = window.location.pathname.split('/').pop();
+    const publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+    const currentPage = window.location.pathname.split('/').pop();
     
     if (!token || !user) {
-        if (publicPages.indexOf(currentPage) === -1) {
+        if (!publicPages.includes(currentPage)) {
             window.location.href = '/login.html';
         }
         return false;
@@ -68,10 +64,6 @@ function checkAuth() {
 }
 
 // Initialize on page load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-        checkAuth();
-    });
-} else {
+document.addEventListener('DOMContentLoaded', function() {
     checkAuth();
-}
+});

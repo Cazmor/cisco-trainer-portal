@@ -1,0 +1,16 @@
+
+server\routes\attendance.js:49:router.post('/bulk', requireRole('admin', 'instructor', 'super_admin'), async (req, res) => {
+server\routes\attendance.js:70:    } catch (error) { console.error('BULK error:', error); res.status(500).json({ error: error.message }); }
+server\routes\performance.js:55:router.post('/bulk', requireRole('admin', 'instructor', 'super_admin'), async (req, res) => {
+server\routes\performance.js:71:        console.error('Bulk save error:', error);
+server\routes\settings.js:6:const { stringify } = require('csv-stringify/sync');
+server\routes\settings.js:67:        archive.append(stringify(students.rows, { header: true }), { name: 'students.csv' });
+server\routes\students.js:61:router.post('/bulk-import', requireRole('admin', 'instructor', 'super_admin'), upload.single('csv'), async (req, res) => {
+server\routes\students.js:63:        if (!req.file) return res.status(400).json({ error: 'CSV file required' });
+server\routes\students.js:86:        var imported = 0, errors = [];
+server\routes\students.js:104:                imported++;
+server\routes\students.js:109:        res.json({ message: 'Import done', imported: imported, errors: errors.slice(0, 5), total_errors: errors.length });
+server\routes\templates.js:111:// Download template as CSV
+server\routes\templates.js:119:        res.setHeader('Content-Type', 'text/csv');
+server\routes\templates.js:120:        res.setHeader('Content-Disposition', `attachment; filename="${template.name}.csv"`);
+

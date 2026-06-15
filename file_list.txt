@@ -1,0 +1,16 @@
+
+    Directory: C:\Users\hp\Documents\GitHub\New folder\instructor-portal\public
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           6/12/2026  8:43 PM          61115 admin.html
+-a---           6/11/2026  8:57 PM          29869 centre.html
+-a---            6/5/2026 11:47 AM           4029 forgot-password.html
+-a---           6/11/2026  8:57 PM           6227 index.html
+-a---           6/11/2026  8:57 PM           3392 learner.html
+-a---           6/11/2026  8:57 PM           4902 login.html
+-a---            6/5/2026 11:48 AM           6420 register.html
+-a---           5/27/2026  2:38 PM          10468 surveillance.html
+-a---           6/12/2026  8:26 PM           6959 template-manager.html
+-a---           6/12/2026  8:32 PM           6316 templates-content.html
+

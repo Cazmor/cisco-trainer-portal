@@ -1,0 +1,39 @@
+                  List of relations
+ Schema |           Name           | Type  |  Owner   
+--------+--------------------------+-------+----------
+ public | ai_conversations         | table | postgres
+ public | attendance_records       | table | postgres
+ public | centre_templates         | table | postgres
+ public | centres                  | table | postgres
+ public | class_evidence_photos    | table | postgres
+ public | classes_scheduled        | table | postgres
+ public | daily_reports            | table | postgres
+ public | delivery_plans           | table | postgres
+ public | innovation_log           | table | postgres
+ public | interventions            | table | postgres
+ public | lab_equipment            | table | postgres
+ public | lab_laptops              | table | postgres
+ public | lab_other_devices        | table | postgres
+ public | lab_workstations         | table | postgres
+ public | maintenance_logs         | table | postgres
+ public | maintenance_reports      | table | postgres
+ public | module_curriculum        | table | postgres
+ public | notification_preferences | table | postgres
+ public | password_resets          | table | postgres
+ public | pending_registrations    | table | postgres
+ public | performance_scores       | table | postgres
+ public | preventive_maintenance   | table | postgres
+ public | professional_development | table | postgres
+ public | student_feedback         | table | postgres
+ public | students                 | table | postgres
+ public | survey_questions         | table | postgres
+ public | survey_responses         | table | postgres
+ public | surveys                  | table | postgres
+ public | system_settings          | table | postgres
+ public | template_categories      | table | postgres
+ public | templates                | table | postgres
+ public | timetable_config         | table | postgres
+ public | users                    | table | postgres
+ public | weekly_reports           | table | postgres
+(34 rows)
+

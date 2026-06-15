@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Manager - Cisco Trainer Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f0f4f8; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #00b4d8; color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .card { background: white; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        .btn { background: #00b4d8; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .btn-danger { background: #ef4444; }
+        .btn-success { background: #10b981; }
+        .template-card { background: #f8fafc; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .template-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Template Manager</h1>
+            <p>Manage CSV templates for student imports and delivery plans</p>
+        </div>
+        
+        <div class="card">
+            <h2>Create New Template</h2>
+            <form id="template-form">
+                <div class="form-group">
+                    <label>Template Name</label>
+                    <input type="text" id="template-name" required placeholder="e.g., Student Import Template">
+                </div>
+                <div class="form-group">
+                    <label>Template Type</label>
+                    <select id="template-type">
+                        <option value="student_csv">Student CSV Import</option>
+                        <option value="delivery_plan">Delivery Plan</option>
+                        <option value="performance">Performance Scores</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>CSV Content (Headers + Sample Data)</label>
+                    <textarea id="template-content" rows="8" required placeholder="First Name,Last Name,Email,Stream&#10;John,Doe,john@example.com,Love&#10;Jane,Smith,jane@example.com,Joy"></textarea>
+                </div>
+                <button type="submit" class="btn">Create Template</button>
+            </form>
+        </div>
+        
+        <div class="card">
+            <h2>Existing Templates</h2>
+            <div id="templates-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/templates';
+        
+        async function loadTemplates() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            try {
+                const res = await fetch(API_BASE, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const templates = await res.json();
+                renderTemplates(templates);
+            } catch (err) {
+                document.getElementById('templates-list').innerHTML = '<p style="color:red">Error loading templates</p>';
+            }
+        }
+        
+        function renderTemplates(templates) {
+            const container = document.getElementById('templates-list');
+            if (!templates.length) {
+                container.innerHTML = '<p>No templates yet. Create your first template above!</p>';
+                return;
+            }
+            
+            container.innerHTML = templates.map(t => `
+                <div class="template-card">
+                    <div class="template-header">
+                        <h3>${t.name}</h3>
+                        <div>
+                            <button class="btn-success" style="padding:5px 10px; margin-right:5px;" onclick="downloadTemplate(${t.id}, '${t.name}')">Download</button>
+                            <button class="btn-danger" style="padding:5px 10px;" onclick="deleteTemplate(${t.id})">Delete</button>
+                        </div>
+                    </div>
+                    <p><strong>Type:</strong> ${t.template_type}</p>
+                    <pre>${t.content.substring(0, 200)}${t.content.length > 200 ? '...' : ''}</pre>
+                </div>
+            `).join('');
+        }
+        
+        async function downloadTemplate(id, name) {
+            window.open(`${API_BASE}/${id}/download`, '_blank');
+        }
+        
+        async function deleteTemplate(id) {
+            if (confirm('Delete this template?')) {
+                const token = localStorage.getItem('token');
+                await fetch(`${API_BASE}/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                loadTemplates();
+            }
+        }
+        
+        document.getElementById('template-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            
+            const data = {
+                name: document.getElementById('template-name').value,
+                category_id: 1,
+                template_type: document.getElementById('template-type').value,
+                content: document.getElementById('template-content').value,
+                headers: []
+            };
+            
+            try {
+                const res = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    alert('Template created!');
+                    document.getElementById('template-form').reset();
+                    loadTemplates();
+                } else {
+                    const error = await res.json();
+                    alert('Error: ' + (error.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Error creating template: ' + err.message);
+            }
+        });
+        
+        // Check auth and load
+        if (localStorage.getItem('token')) {
+            loadTemplates();
+        } else {
+            window.location.href = '/login.html';
+        }
+    </script>
+</body>
+</html>

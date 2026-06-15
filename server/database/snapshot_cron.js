@@ -108,7 +108,7 @@ async function runIntelligentSnapshot() {
             if (cpdCourses === 0) riskLevel += ' | No CPD';
             
             await pool.query(
-                "INSERT INTO instructor_metrics_daily (instructor_id, centre_id, kpi_out_of_50, evidence_age_days_max, risk_score_0_100, risk_factors) VALUES ($1, $2, $3, $4, $5, $6)",
+                "INSERT INTO instructor_metrics_daily (instructor_id, centre_id, kpi_out_of_50, evidence_age_days_max, risk_score_0_100, risk_factors, date) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE) ON CONFLICT (instructor_id, date) DO UPDATE SET kpi_out_of_50 = EXCLUDED.kpi_out_of_50, evidence_age_days_max = EXCLUDED.evidence_age_days_max, risk_score_0_100 = EXCLUDED.risk_score_0_100, risk_factors = EXCLUDED.risk_factors, centre_id = EXCLUDED.centre_id",
                 [inst.id, inst.centre_id, kpiOutOf50, evidenceAge, riskScore, riskLevel]
             );
             
@@ -140,3 +140,4 @@ async function runIntelligentSnapshot() {
     finally { await pool.end(); }
 }
 runIntelligentSnapshot();
+

@@ -63,6 +63,7 @@ const settingsRoutes = require('./routes/settings');
 const surveysRoutes = require('./routes/surveys');
 const curriculumRoutes = require('./routes/curriculum');
 const surveillanceRoutes = require('./routes/surveillance');
+const templatesRoutes = require('./routes/templates');
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -79,6 +80,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/surveys', surveysRoutes);
 app.use('/api/curriculum', curriculumRoutes);
 app.use('/api/surveillance', surveillanceRoutes);
+app.use('/api/templates', templatesRoutes);
 
 // Serve login page as default
 app.get('/', (req, res) => {

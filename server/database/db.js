@@ -6,7 +6,6 @@ const pool = new Pool(makeDbConfig());
 
 pool.on('error', (err, client) => {
     console.error('Unexpected error on idle client', err);
-    process.exit(-1);
 });
 
 pool.on('connect', () => {
@@ -17,7 +16,9 @@ const query = async (text, params) => {
     const start = Date.now();
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query', { text: text.substring(0, 50), duration, rows: res.rowCount });
+    if (process.env.NODE_ENV !== 'production') {
+        console.log('Executed query', { text: text.substring(0, 50), duration, rows: res.rowCount });
+    }
     return res;
 };
 
