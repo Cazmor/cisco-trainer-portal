@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<link rel="stylesheet" href="css/settings.css">
 <style>
 :root{--bg:#0f1115;--panel:#151922;--text:#e8eaf0;--muted:#aab1c3;--accent:#d4a017;--danger:#ff5d5d;--warn:#ffb020;--success:#4cd97b;--info:#60a5fa;--border:#262c3a}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text)}
@@ -53,6 +54,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 12px
 <div class="nav-item" data-page="audit"><i class="fa-solid fa-clipboard-list"></i> Audit</div>
 <div class="nav-item" data-page="reports"><i class="fa-solid fa-file-export"></i> Reports</div>
 <div class="nav-item" data-page="alerts"><i class="fa-solid fa-exclamation-triangle"></i> Alerts <span class="badge danger" id="alertBadge" style="display:none;margin-left:auto">0</span></div>
+<div class="nav-item" data-page="settings"><i class="fa-solid fa-cog"></i> Settings</div>
 </nav>
 <div style="margin-top:auto"><button class="btn danger" onclick="logout()" style="width:100%">Logout</button></div>
 </aside>
@@ -74,6 +76,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 12px
 <section class="section" id="sec-audit"><div id="auditContent">Loading...</div></section>
 <section class="section" id="sec-reports"><div id="reportContent">Loading...</div></section>
 <section class="section" id="sec-alerts"><div id="alertContent">Loading...</div></section>
+<section class="section" id="sec-settings"><div id="contentArea">Loading Settings...</div></section>
 </div>
 </main>
 </div>
@@ -139,7 +142,7 @@ document.querySelectorAll('#nav .nav-item').forEach(function(i){i.classList.remo
 var el=document.querySelector('[data-page="'+page+'"]');if(el)el.classList.add('active');
 document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
 var sec=document.getElementById('sec-'+page);if(sec)sec.classList.add('active');
-var t={dashboard:'Command Centre',instructors:'Instructor Intel',centres:'Centres',classes:'Class Integrity',labs:'Lab Surveillance',attendance:'Attendance',performance:'Performance',innovation:'Innovation & CPD',compare:'Compare Centres',users:'Users',pending:'Pending',reports:'Reports',audit:'Audit',alerts:'Alerts'};
+var t={dashboard:'Command Centre',instructors:'Instructor Intel',centres:'Centres',classes:'Class Integrity',labs:'Lab Surveillance',attendance:'Attendance',performance:'Performance',innovation:'Innovation & CPD',compare:'Compare Centres',users:'Users',pending:'Pending',reports:'Reports',audit:'Audit',alerts:'Alerts',settings:'Settings'};
 document.getElementById('pageTitle').textContent=t[page]||page;
 if(page==='dashboard')loadDashboard();else if(page==='instructors')loadInstructors();
 else if(page==='centres')loadCentres();else if(page==='users')loadUsers();
@@ -147,6 +150,7 @@ else if(page==='pending')loadPending();else if(page==='classes')loadClasses();
 else if(page==='labs')loadLabs();
 else if(page==='attendance')loadAttendance();
 else if(page==='performance')loadPerformance();
+else if(page==='settings'){ if(typeof loadSettingsPage==='function') loadSettingsPage(); }
 else if(page==='innovation')loadInnovation();
 else if(page==='compare')loadCompare();
 else if(page==='audit')loadAudit();
@@ -651,6 +655,8 @@ function showToast(msg, type) {
     setTimeout(() => toast.remove(), 3000);
 }
 </script>
+<script src="/js/session.js"></script>
+<script src="/js/settings.js"></script>
 </body>
 </html>
 

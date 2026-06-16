@@ -10,7 +10,7 @@ router.use(authenticateToken);
 router.get('/', async (req, res) => {
     try {
         var stream = req.query.stream, search = req.query.search, status = req.query.status;
-        var sql = "SELECT s.*, c.name as centre_name FROM students s LEFT JOIN centres c ON s.centre_id = c.id WHERE 1=1";
+        var sql = "SELECT s.*, c.name as centre_name, (SELECT AVG(total_score) FROM performance_scores WHERE student_id = s.id) as avg_score, (SELECT (COUNT(*) FILTER (WHERE status = 'P') * 100.0 / NULLIF(COUNT(*), 0)) FROM attendance_records WHERE student_id = s.id) as attendance_rate FROM students s LEFT JOIN centres c ON s.centre_id = c.id WHERE 1=1";
         var params = [], pc = 0;
         if (req.user.role === 'admin' || req.user.role === 'instructor') { pc++; sql += " AND s.centre_id = $" + pc; params.push(req.user.centre_id); }
         if (stream) { pc++; sql += " AND s.stream = $" + pc; params.push(stream); }
@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        var result = await query("SELECT s.*, c.name as centre_name FROM students s LEFT JOIN centres c ON s.centre_id = c.id WHERE s.id = $1", [req.params.id]);
+        var result = await query("SELECT s.*, c.name as centre_name, (SELECT AVG(total_score) FROM performance_scores WHERE student_id = s.id) as avg_score, (SELECT (COUNT(*) FILTER (WHERE status = 'P') * 100.0 / NULLIF(COUNT(*), 0)) FROM attendance_records WHERE student_id = s.id) as attendance_rate FROM students s LEFT JOIN centres c ON s.centre_id = c.id WHERE s.id = $1", [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Not found' });
         var student = result.rows[0];
         var att = await query("SELECT * FROM attendance_records WHERE student_id = $1 ORDER BY date DESC LIMIT 30", [req.params.id]);

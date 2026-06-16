@@ -102,10 +102,11 @@ async function runIntelligentSnapshot() {
             
             riskScore = Math.min(riskScore, 100);
             
-            var riskLevel = riskScore > 60 ? 'High risk' : riskScore > 30 ? 'Moderate' : 'Low';
-            if (studentCount === 0) riskLevel += ' | No active students';
-            if (reportsSubmitted === 0) riskLevel += ' | No reports';
-            if (cpdCourses === 0) riskLevel += ' | No CPD';
+            var riskLevel = [];
+            riskLevel.push(riskScore > 60 ? 'High risk' : riskScore > 30 ? 'Moderate' : 'Low');
+            if (studentCount === 0) riskLevel.push('No active students');
+            if (reportsSubmitted === 0) riskLevel.push('No reports');
+            if (cpdCourses === 0) riskLevel.push('No CPD');
             
             await pool.query(
                 "INSERT INTO instructor_metrics_daily (instructor_id, centre_id, kpi_out_of_50, evidence_age_days_max, risk_score_0_100, risk_factors, date) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_DATE) ON CONFLICT (instructor_id, date) DO UPDATE SET kpi_out_of_50 = EXCLUDED.kpi_out_of_50, evidence_age_days_max = EXCLUDED.evidence_age_days_max, risk_score_0_100 = EXCLUDED.risk_score_0_100, risk_factors = EXCLUDED.risk_factors, centre_id = EXCLUDED.centre_id",
@@ -115,7 +116,7 @@ async function runIntelligentSnapshot() {
             if (riskScore > 60) {
                 await pool.query(
                     "INSERT INTO surveillance_alerts (alert_type, category, message, instructor_id) VALUES ($1, $2, $3, $4)",
-                    ['red', 'High Risk Alert', inst.name + ' has risk score ' + riskScore + '/100. KPI: ' + kpiOutOf50 + '/50. Factors: ' + riskLevel, inst.id]
+                    ['red', 'High Risk Alert', inst.name + ' has risk score ' + riskScore + '/100. KPI: ' + kpiOutOf50 + '/50. Factors: ' + riskLevel.join(' | '), inst.id]
                 );
             } else if (riskScore > 30 && evidenceAge > 20) {
                 await pool.query(

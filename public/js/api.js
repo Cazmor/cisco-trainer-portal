@@ -184,7 +184,10 @@ var API = {
     curriculum: { get: function(p) { var q = new URLSearchParams(p || {}).toString(); return API.request('/curriculum' + (q ? '?' + q : '')); }, save: function(data) { return API.request('/curriculum/save', { method: 'POST', body: { sections: data.sections || data } }); } },
     
     // Settings endpoints
-    settings: { getProfile: function() { return API.request('/settings/profile'); }, updateProfile: function(d) { return API.request('/settings/profile', { method: 'PUT', body: d }); }, getNotifications: function() { return API.request('/settings/notifications'); }, updateNotifications: function(d) { return API.request('/settings/notifications', { method: 'PUT', body: d }); }, getSystem: function() { return API.request('/settings/system'); }, updateSystem: function(d) { return API.request('/settings/system', { method: 'PUT', body: d }); }, getDevelopment: function() { return API.request('/settings/development'); }, addDevelopment: function(d) { return API.request('/settings/development', { method: 'POST', body: d }); }, deleteDevelopment: function(id) { return API.request('/settings/development/' + id, { method: 'DELETE' }); } }
+    settings: { getProfile: function() { return API.request('/settings/profile'); }, updateProfile: function(d) { return API.request('/settings/profile', { method: 'PUT', body: d }); }, getNotifications: function() { return API.request('/settings/notifications'); }, updateNotifications: function(d) { return API.request('/settings/notifications', { method: 'PUT', body: d }); }, getSystem: function() { return API.request('/settings/system'); }, updateSystem: function(d) { return API.request('/settings/system', { method: 'PUT', body: d }); }, getDevelopment: function() { return API.request('/settings/development'); }, addDevelopment: function(d) { return API.request('/settings/development', { method: 'POST', body: d }); }, deleteDevelopment: function(id) { return API.request('/settings/development/' + id, { method: 'DELETE' }); } },
+    
+    // Templates endpoints
+    templates: { get: function(type) { return API.request('/templates/' + type); }, upload: function(type, content) { return API.request('/templates/' + type, { method: 'POST', body: { content: content } }); } }
 };
 
 // ============================================

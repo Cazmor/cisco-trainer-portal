@@ -91,6 +91,17 @@ function loadInventory(c) {
 function switchInv(tab) {
     currentInventoryTab = tab;
     var c = document.getElementById('invContent'); if (!c) return;
+    
+    // Fix: update tab indicators
+    var tabs = document.querySelectorAll('#labContent .performance-tabs button');
+    for (var i = 0; i < tabs.length; i++) {
+        if (tabs[i].getAttribute('onclick').includes(tab)) {
+            tabs[i].classList.add('active');
+        } else {
+            tabs[i].classList.remove('active');
+        }
+    }
+
     var html = '<div style="margin-bottom:12px;display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="dlTpl(\''+tab+'\')"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'csv_'+tab+'\').click()"><i class="fas fa-upload"></i> Upload CSV</button><input type="file" id="csv_'+tab+'" accept=".csv" style="display:none" onchange="upCSV(event,\''+tab+'\')"></div>';
     if (tab==='laptops') {
         html += '<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" id="selAllLap" onchange="toggleAllLap()"></th><th>Item</th><th>Model</th><th>Serial</th><th>Assigned</th><th>Condition</th><th>UAF</th><th>Actions</th></tr></thead><tbody>';
@@ -120,9 +131,103 @@ function toggleAllDev(){var cb=document.getElementById('selAllDev');var ch=docum
 function updateDevSel(){var ch=document.querySelectorAll('.dev-check:checked');selectedDevices=[];for(var i=0;i<ch.length;i++)selectedDevices.push(parseInt(ch[i].value));var b=document.getElementById('bulkDelDevBtn');var cnt=document.getElementById('devSelCount');if(cnt)cnt.textContent=selectedDevices.length;if(b)b.style.display=selectedDevices.length>0?'inline-flex':'none';}
 async function bulkDelDev(){if(selectedDevices.length===0)return;if(!confirm('Delete '+selectedDevices.length+' device(s)?'))return;try{showLoading();for(var i=0;i<selectedDevices.length;i++)await API.lab.deleteDevice(selectedDevices[i]);showToast('Deleted','success');await loadLabData();switchInv('devices');}catch(e){hideLoading();showToast('Error: '+e.message,'error');}}
 
-function dlTpl(type) { var csv=''; if(type==='laptops')csv='ITEM,DEVICE MODEL,SERIALNUMBER,ASSIGNED TO,DESIGNATION,CONDITION,UAF SIGNED,UAF SIGN DATE,NOTES\n1,Dell Latitude,DL-001,John,Instructor,Good,Yes,2025-12-31,\n2,HP EliteBook,HP-001,Jane,Student,Working,Yes,2025-06-30,'; else if(type==='equipment')csv='Station,Item,Model,Serial Number,Location,Working/Not working,Comment\n1,Mercer Monitor,Mecer,VGA001,Computer Lab,Working,\n,N-computing,Mecer,L300,Computer Lab,Working,\n,Mecer Keyboard,Mecer,OMK001,Computer Lab,Working,\n,Mecer Mouse,Mecer,OMM001,Computer Lab,Working,'; else csv='DEVICE TYPE,MODEL,SERIAL NUMBER,LOCATION,CONDITION,NOTES\nProjector,Epson EB-X41,EPS-001,Lab Room A,Available,\nPrinter,HP LaserJet,HP-001,Admin Office,Available,'; downloadFile(csv, type+'_template.csv', 'text/csv'); showToast('Template downloaded','success'); }
+async function dlTpl(type) { 
+    try {
+        showLoading();
+        var res = await API.templates.get(type === 'workstations' ? 'equipment' : type);
+        downloadFile(res.content, type + '_template.csv', 'text/csv'); 
+        showToast('Template downloaded', 'success'); 
+    } catch (e) {
+        showToast('Error downloading template: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
 
-async function upCSV(event, type) { var file=event.target.files[0];if(!file)return;try{showLoading();var text=await file.text();var lines=text.split('\n');var count=0;currentStation='1'; for(var i=1;i<lines.length;i++){var p=lines[i].split(',');if(p.length<2)continue; if(type==='laptops'){await API.lab.addLaptop({brand:'Laptop',model:(p[1]||'').trim(),serial_number:(p[2]||'SN-'+Date.now()+'-'+i).trim(),status:'available'});count++;} else if(type==='equipment'){var st=(p[0]||'').trim();if(st!==''&&!isNaN(parseInt(st)))currentStation=st;var item=(p[1]||'').trim();var model=(p[2]||'').trim();var sn=(p[3]||'').trim();if(item&&model){await API.lab.addEquipment({equipment_type:item,model:model,serial_number:(sn||'SN-'+Date.now()+'-'+i)+'-'+i,location:'Computer Lab | Station '+currentStation,status:(p[5]||p[6]||'Working').trim().toLowerCase().includes('work')?'available':'maintenance',notes:(p[6]||p[7]||'').trim()});count++;}} else{await API.lab.addDevice({device_type:(p[0]||'Device').trim(),model:(p[1]||'').trim(),serial_number:(p[2]||'DEV-'+Date.now()+'-'+i).trim(),location:(p[3]||'').trim(),status:'available'});count++;}} showToast(count+' items imported','success');await loadLabData();await loadLabTab();}catch(e){showToast('Error: '+e.message,'error');}finally{hideLoading();event.target.value='';}}
+async function upCSV(event, type) { 
+    var file = event.target.files[0];
+    if (!file) return;
+    try {
+        showLoading();
+        var text = await file.text();
+        var lines = text.split('\n');
+        if (lines.length < 2) throw new Error('File is empty or missing data');
+        
+        var headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        var count = 0;
+        var currentStation = '1'; 
+
+        var idxModel = headers.findIndex(h => h.includes('model'));
+        var idxSerial = headers.findIndex(h => h.includes('serial'));
+        var idxItem = headers.findIndex(h => h.includes('item') || h.includes('type'));
+        var idxLoc = headers.findIndex(h => h.includes('location'));
+        var idxCond = headers.findIndex(h => h.includes('condition') || h.includes('working'));
+        var idxStation = headers.findIndex(h => h.includes('station'));
+        var idxNotes = headers.findIndex(h => h.includes('note') || h.includes('comment'));
+
+        for (var i = 1; i < lines.length; i++) {
+            var p = lines[i].split(',');
+            if (p.length < 2) continue; 
+            
+            if (type === 'laptops') {
+                var model = idxModel >= 0 ? p[idxModel].trim() : (p[1]||'').trim();
+                var serial = idxSerial >= 0 ? p[idxSerial].trim() : (p[2]||'').trim();
+                if (!serial) serial = 'SN-' + Date.now() + '-' + i;
+                await API.lab.addLaptop({
+                    brand: 'Laptop',
+                    model: model,
+                    serial_number: serial,
+                    status: 'available'
+                });
+                count++;
+            } else if (type === 'equipment') {
+                var st = idxStation >= 0 ? (p[idxStation]||'').trim() : (p[0]||'').trim();
+                if (st !== '' && !isNaN(parseInt(st))) currentStation = st;
+                
+                var item = idxItem >= 0 ? (p[idxItem]||'').trim() : (p[1]||'').trim();
+                var model = idxModel >= 0 ? (p[idxModel]||'').trim() : (p[2]||'').trim();
+                var serial = idxSerial >= 0 ? (p[idxSerial]||'').trim() : (p[3]||'').trim();
+                var loc = idxLoc >= 0 ? (p[idxLoc]||'').trim() : 'Computer Lab | Station ' + currentStation;
+                var cond = idxCond >= 0 ? (p[idxCond]||'').trim().toLowerCase() : (p[5]||'Working').trim().toLowerCase();
+                var notes = idxNotes >= 0 ? (p[idxNotes]||'').trim() : '';
+
+                if (item && model) {
+                    await API.lab.addEquipment({
+                        equipment_type: item,
+                        model: model,
+                        serial_number: serial || ('SN-' + Date.now() + '-' + i),
+                        location: loc,
+                        status: cond.includes('work') || cond.includes('avail') ? 'available' : 'maintenance',
+                        notes: notes
+                    });
+                    count++;
+                }
+            } else {
+                var devType = idxItem >= 0 ? (p[idxItem]||'').trim() : (p[0]||'Device').trim();
+                var model = idxModel >= 0 ? (p[idxModel]||'').trim() : (p[1]||'').trim();
+                var serial = idxSerial >= 0 ? (p[idxSerial]||'').trim() : (p[2]||'').trim();
+                var loc = idxLoc >= 0 ? (p[idxLoc]||'').trim() : (p[3]||'').trim();
+                
+                await API.lab.addDevice({
+                    device_type: devType,
+                    model: model,
+                    serial_number: serial || ('DEV-' + Date.now() + '-' + i),
+                    location: loc,
+                    status: 'available'
+                });
+                count++;
+            }
+        } 
+        showToast(count + ' items imported', 'success');
+        await loadLabData();
+        await loadLabTab();
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+        event.target.value = '';
+    }
+}
 
 async function editLaptop(id){var l=allLaptops.find(function(x){return x.id===id;});if(!l)return;var ns=l.status==='available'?'assigned':l.status==='assigned'?'maintenance':'available';try{await API.lab.updateLaptop(id,{status:ns});showToast('Updated','success');await loadLabData();await loadLabTab();}catch(e){showToast('Error: '+e.message,'error');}}
 async function delLaptop(id){if(!confirm('Delete?'))return;try{await API.lab.deleteLaptop(id);showToast('Deleted','success');await loadLabData();await loadLabTab();}catch(e){showToast('Error: '+e.message,'error');}}

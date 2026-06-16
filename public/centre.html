@@ -51,6 +51,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px 12px;ba
 <div class="nav-item" data-page="classes"><i class="fa-solid fa-chalkboard"></i> Classes</div>
 <div class="nav-item" data-page="feedback"><i class="fa-solid fa-comments"></i> Feedback</div>
 <div class="nav-item" data-page="kpi"><i class="fa-solid fa-trophy"></i> KPI</div>
+<div class="nav-item" data-page="settings"><i class="fa-solid fa-cog"></i> Settings</div>
 </nav>
 <div style="margin-top:auto"><button class="btn" onclick="logout()" style="width:100%;color:var(--danger);border-color:var(--danger)">Logout</button></div>
 </aside>
@@ -67,6 +68,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px 12px;ba
 <section class="section" id="sec-classes"><div id="classContent">Loading...</div></section>
 <section class="section" id="sec-feedback"><div id="feedbackContent">Loading...</div></section>
 <section class="section" id="sec-kpi"><div id="kpiContent">Loading...</div></section>
+<section class="section" id="sec-settings"><div id="contentArea">Loading Settings...</div></section>
 </div>
 </main>
 </div>
@@ -103,13 +105,14 @@ document.querySelectorAll('#nav .nav-item').forEach(function(i){i.classList.remo
 var el=document.querySelector('[data-page="'+page+'"]');if(el)el.classList.add('active');
 document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
 var sec=document.getElementById('sec-'+page);if(sec)sec.classList.add('active');
-var t={dashboard:'Dashboard',students:'Students',attendance:'Attendance',performance:'Performance',lab:'Lab',timetable:'Timetable',delivery:'Delivery Plan',classes:'Classes',feedback:'Feedback',kpi:'KPI'};
+var t={dashboard:'Dashboard',students:'Students',attendance:'Attendance',performance:'Performance',lab:'Lab',timetable:'Timetable',delivery:'Delivery Plan',classes:'Classes',feedback:'Feedback',kpi:'KPI',settings:'Settings'};
 document.getElementById('pageTitle').textContent=t[page]||page;
 if(page==='dashboard')loadDashboard();else if(page==='students')loadStudents();
 else if(page==='attendance')loadAttendance();else if(page==='performance')loadPerformance();
 else if(page==='lab')loadLab();else if(page==='timetable')loadTimetable();
 else if(page==='delivery')loadDelivery();else if(page==='classes')loadClasses();
 else if(page==='feedback')loadFeedback();else if(page==='kpi')loadKPI();
+else if(page==='settings'){ if(typeof loadSettingsPage==='function') loadSettingsPage(); }
 }
 function refresh(){var a=document.querySelector('#nav .nav-item.active');nav(a?a.dataset.page:'dashboard')}
 

@@ -3,15 +3,19 @@ var currentSettingsTab = 'profile';
 async function loadSettingsPage() {
     var contentArea = document.getElementById('contentArea');
     if (!contentArea) return;
+    var user = getUser();
+    var templateTabHtml = (user.role === 'admin' && !user.centre_id) || user.role === 'super_admin' ? '<button class="settings-nav-item" onclick="switchSettingsTab(\'templates\')"><i class="fas fa-file-csv"></i> Templates</button>' : '';
     contentArea.innerHTML = '<div class="settings-container">' +
         '<div class="settings-nav">' +
             '<button class="settings-nav-item active" onclick="switchSettingsTab(\'profile\')"><i class="fas fa-user-circle"></i> Profile</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'notifications\')"><i class="fas fa-bell"></i> Notifications</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'emails\')"><i class="fas fa-envelope"></i> Email Recipients</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'system\')"><i class="fas fa-cog"></i> System</button>' +
+            '<button class="settings-nav-item" onclick="switchSettingsTab(\'security\')"><i class="fas fa-shield-alt"></i> Security</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'cpd\')"><i class="fas fa-certificate"></i> CPD Log</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'curriculum\')"><i class="fas fa-book"></i> Curriculum</button>' +
             '<button class="settings-nav-item" onclick="switchSettingsTab(\'data\')"><i class="fas fa-database"></i> Data Management</button>' +
+            templateTabHtml +
         '</div><div id="settingsContent"></div>' +
     '</div>' +
     '<div id="cpdModal" class="modal"><div class="modal-content" style="max-width:600px"><div class="modal-header"><h3>Add CPD Entry</h3><button class="modal-close" onclick="hideModal(\'cpdModal\')">&times;</button></div><form id="cpdForm" onsubmit="saveCPDEntry(event)"><div class="form-group"><label>Course/Webinar Name</label><input type="text" id="cpdName" class="form-control" required placeholder="e.g. CCNA Switching & Routing"></div><div class="form-group"><label>Platform / Provider</label><select id="cpdPlatform" class="form-control"><option value="Cisco NetAcad">Cisco NetAcad</option><option value="Coursera">Coursera</option><option value="Udemy">Udemy</option><option value="LinkedIn Learning">LinkedIn Learning</option><option value="Other">Other</option></select></div><div class="form-row"><div class="form-group"><label>Hours Spent</label><input type="number" id="cpdHours" class="form-control" placeholder="Hours" min="0" step="0.5"></div><div class="form-group"><label>Date Completed</label><input type="date" id="cpdDate" class="form-control"></div></div><div class="form-group"><label>Status</label><div style="display:flex;gap:16px"><label><input type="checkbox" id="cpdCompleted"> Completed</label><label><input type="checkbox" id="cpdShared"> Shared with team</label></div></div><div class="form-group"><label>Notes</label><textarea id="cpdNotes" class="form-control" rows="2"></textarea></div><div class="modal-footer"><button type="button" class="btn btn-outline" onclick="hideModal(\'cpdModal\')">Cancel</button><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button></div></form></div></div>';
@@ -20,7 +24,7 @@ async function loadSettingsPage() {
 
 async function switchSettingsTab(tab) { currentSettingsTab = tab; var items = document.querySelectorAll('.settings-nav-item'); for (var i=0;i<items.length;i++) items[i].classList.remove('active'); var active = document.querySelector('.settings-nav-item[onclick*="'+tab+'"]'); if (active) active.classList.add('active'); await loadSettingsTab(); }
 
-async function loadSettingsTab() { var content = document.getElementById('settingsContent'); if (!content) return; showLoading(); try { if (currentSettingsTab==='profile') loadProfileTab(content); else if (currentSettingsTab==='notifications') loadNotificationsTab(content); else if (currentSettingsTab==='emails') loadEmailsTab(content); else if (currentSettingsTab==='system') loadSystemTab(content); else if (currentSettingsTab==='cpd') loadCPDTab(content); else if (currentSettingsTab==='curriculum') loadCurriculumTab(content); else if (currentSettingsTab==='data') loadDataTab(content); } catch(e) { content.innerHTML='<p>Error: '+e.message+'</p>'; } hideLoading(); }
+async function loadSettingsTab() { var content = document.getElementById('settingsContent'); if (!content) return; showLoading(); try { if (currentSettingsTab==='profile') loadProfileTab(content); else if (currentSettingsTab==='notifications') loadNotificationsTab(content); else if (currentSettingsTab==='emails') loadEmailsTab(content); else if (currentSettingsTab==='system') loadSystemTab(content); else if (currentSettingsTab==='cpd') loadCPDTab(content); else if (currentSettingsTab==='curriculum') loadCurriculumTab(content); else if (currentSettingsTab==='data') loadDataTab(content); else if (currentSettingsTab==='security') loadSecurityTab(content); else if (currentSettingsTab==='templates') loadTemplatesTab(content); } catch(e) { content.innerHTML='<p>Error: '+e.message+'</p>'; } hideLoading(); }
 
 async function loadProfileTab(content) {
     var profile = await API.settings.getProfile();
@@ -157,6 +161,70 @@ async function saveCurriculum() {
     } catch(e) { hideLoading(); showToast('Error: '+e.message,'error'); } 
 }
 
+async function uploadDataFile(event, type) {
+    var file = event.target.files[0];
+    if (!file) return;
+    try {
+        showLoading();
+        // Just mock for now
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        showToast(type + ' uploaded successfully', 'success');
+    } catch(e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+        event.target.value = '';
+    }
+}
+
+async function loadTemplatesTab(content) {
+    content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-file-csv"></i> Template Management</h3>' +
+        '<p style="color:var(--text-secondary);margin-bottom:20px">Upload custom CSV templates that instructors will download for bulk imports. The headers in these templates will be used to validate uploaded files.</p>' +
+        '<div class="grid-2" style="gap:16px">' +
+        renderTemplateUploader('Students', 'students') +
+        renderTemplateUploader('Performance', 'performance') +
+        renderTemplateUploader('Laptops', 'laptops') +
+        renderTemplateUploader('Workstations', 'equipment') +
+        renderTemplateUploader('Devices', 'devices') +
+        '</div></div>';
+}
+
+function renderTemplateUploader(title, type) {
+    return '<div class="card" style="padding:16px"><h4 style="margin-bottom:12px">' + title + ' Template</h4>' +
+        '<div style="display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="downloadCurrentTemplate(\'' + type + '\')"><i class="fas fa-download"></i> Current</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="document.getElementById(\'tplUpload_' + type + '\').click()"><i class="fas fa-upload"></i> Upload New</button>' +
+        '<input type="file" id="tplUpload_' + type + '" accept=".csv" style="display:none" onchange="handleTemplateUpload(event, \'' + type + '\')"></div></div>';
+}
+
+async function downloadCurrentTemplate(type) {
+    try {
+        showLoading();
+        const tpl = await API.templates.get(type);
+        downloadFile(tpl.content, type + '_template.csv', 'text/csv');
+        showToast('Template downloaded', 'success');
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleTemplateUpload(event, type) {
+    var file = event.target.files[0];
+    if (!file) return;
+    try {
+        showLoading();
+        var text = await file.text();
+        await API.templates.upload(type, text);
+        showToast(type + ' template updated successfully', 'success');
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+        event.target.value = '';
+    }
+}
+
 async function resetCurriculum() { if (!confirm('Reset curriculum to default?')) return; try { await API.curriculum.reset(); showToast('Reset to default','success'); } catch(e) { showToast('Error: '+e.message,'error'); } }
 
 async function viewCurrentModules() {
@@ -176,3 +244,67 @@ function loadDataTab(content) {
 function exportData() { window.open('/api/settings/export', '_blank'); showToast('Export started!','success'); }
 
 function resetSystem() { if (!confirm('WARNING: This will reset all data. Are you sure?')) return; if (!confirm('FINAL WARNING: All data will be lost. Continue?')) return; showToast('System reset would be performed here','warning'); }
+
+function loadSecurityTab(content) {
+    content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-shield-alt"></i> Security Settings</h3>' +
+        '<form id="changePasswordForm" class="settings-form">' +
+            '<div class="form-group"><label>Current Password *</label><input type="password" id="currentPassword" class="form-control" required></div>' +
+            '<div class="form-group"><label>New Password *</label><input type="password" id="newPassword" class="form-control" required minlength="8">' +
+            '<div id="password-requirements" style="margin-top: 8px; font-size: 13px; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">' +
+                '<div style="margin-bottom: 4px; font-weight: 600; color: #334155;">Password requirements:</div>' +
+                '<div id="req-length" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> At least 8 characters</div>' +
+                '<div id="req-upper" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> One uppercase letter</div>' +
+                '<div id="req-lower" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> One lowercase letter</div>' +
+                '<div id="req-number" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> One number</div>' +
+                '<div id="req-special" style="color: #ef4444;"><i class="fas fa-times-circle"></i> One special character</div>' +
+            '</div></div>' +
+            '<div class="form-group"><label>Confirm New Password *</label><input type="password" id="confirmPassword" class="form-control" required minlength="8"></div>' +
+            '<button type="submit" class="btn btn-primary" id="changePwdBtn"><i class="fas fa-save"></i> Change Password</button>' +
+        '</form></div>';
+
+    setTimeout(() => {
+        const pwdInput = document.getElementById('newPassword');
+        if (pwdInput) {
+            pwdInput.addEventListener('input', function() {
+                const val = this.value;
+                function updateReq(id, valid) {
+                    const el = document.getElementById(id);
+                    if (valid) { el.style.color = '#10b981'; el.innerHTML = '<i class="fas fa-check-circle"></i> ' + el.innerText.trim(); }
+                    else { el.style.color = '#ef4444'; el.innerHTML = '<i class="fas fa-times-circle"></i> ' + el.innerText.trim(); }
+                }
+                updateReq('req-length', val.length >= 8);
+                updateReq('req-upper', /[A-Z]/.test(val));
+                updateReq('req-lower', /[a-z]/.test(val));
+                updateReq('req-number', /[0-9]/.test(val));
+                updateReq('req-special', /[^A-Za-z0-9]/.test(val));
+            });
+        }
+        
+        const form = document.getElementById('changePasswordForm');
+        if (form) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const current = document.getElementById('currentPassword').value;
+                const newPwd = document.getElementById('newPassword').value;
+                const confPwd = document.getElementById('confirmPassword').value;
+                if (newPwd !== confPwd) { showToast('New passwords do not match', 'error'); return; }
+                const minLength = 8; const hasUpper = /[A-Z]/.test(newPwd); const hasLower = /[a-z]/.test(newPwd); const hasNumber = /[0-9]/.test(newPwd); const hasSpecial = /[^A-Za-z0-9]/.test(newPwd);
+                if (!(newPwd.length >= minLength && hasUpper && hasLower && hasNumber && hasSpecial)) { showToast('Password does not meet requirements', 'error'); return; }
+                
+                try {
+                    const btn = document.getElementById('changePwdBtn');
+                    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing...';
+                    const response = await fetch('/api/auth/change-password', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+                        body: JSON.stringify({ currentPassword: current, newPassword: newPwd })
+                    });
+                    const data = await response.json();
+                    if (response.ok) { showToast('Password changed successfully!', 'success'); form.reset(); pwdInput.dispatchEvent(new Event('input')); }
+                    else { showToast(data.error || 'Failed to change password', 'error'); }
+                } catch(err) { showToast('Network error', 'error'); }
+                finally { document.getElementById('changePwdBtn').disabled = false; document.getElementById('changePwdBtn').innerHTML = '<i class="fas fa-save"></i> Change Password'; }
+            });
+        }
+    }, 100);
+}

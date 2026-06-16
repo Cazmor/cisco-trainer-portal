@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS instructor_metrics_daily (
     passrate_window DECIMAL(5,2),
     risk_score_0_100 INTEGER DEFAULT 0,
     risk_factors TEXT[] DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(instructor_id, date)
 );
 
 CREATE TABLE IF NOT EXISTS centre_metrics_daily (

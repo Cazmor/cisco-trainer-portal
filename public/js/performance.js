@@ -101,8 +101,21 @@ function renderAssessTable() {
     tbody.innerHTML = html;
 }
 
+async function downloadPerformanceTemplate() {
+    try {
+        showLoading();
+        var res = await API.templates.get('performance');
+        downloadFile(res.content, 'performance_template.csv', 'text/csv');
+        showToast('Template downloaded', 'success');
+    } catch (e) {
+        showToast('Error downloading template: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
 async function loadCiscoExams(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();
-    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button><input type="file" id="ciscoCsvUpload" accept=".csv" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">CSV: student_id, module_number, exam_score</div><table><thead><tr><th>Student</th><th>Module</th><th>Exam Score</th></tr></thead><tbody id="ciscoTable"></tbody></table></div>';
+    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><div><button class="btn btn-outline" onclick="downloadPerformanceTemplate()" style="margin-right:8px"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button></div><input type="file" id="ciscoCsvUpload" accept=".csv" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">Fill in the downloaded template: student_id, module_number, exam_score</div><table><thead><tr><th>Student</th><th>Module</th><th>Exam Score</th></tr></thead><tbody id="ciscoTable"></tbody></table></div>';
     var cisco = allScores.filter(function(s) { return s.exam_score > 0; });
     var tbody = document.getElementById('ciscoTable');
     if (cisco.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px">No exam scores</td></tr>'; return; }
@@ -112,10 +125,39 @@ async function loadCiscoExams(content) { allStudents = await API.students.getAll
 
 async function handleCiscoCsvUpload(event) {
     var file = event.target.files[0]; if (!file) return;
-    try { showLoading(); var text = await file.text(); var lines = text.split('\n'); var scores = [];
-        for (var i = 1; i < lines.length; i++) { var p = lines[i].split(','); if (p.length < 3) continue; var sid = parseInt(p[0].trim()), mod = parseInt(p[1].trim()), ex = parseFloat(p[2].trim()); if (!isNaN(sid)&&!isNaN(mod)&&!isNaN(ex)) scores.push({ student_id: sid, module_number: mod, module_name: 'Module '+mod, quiz_score:0, practical_score:0, exam_score:ex }); }
-        await API.performance.saveBulk({ scores: scores }); showToast(scores.length+' exam scores uploaded','success'); allScores = await API.performance.get(); await loadPerformanceTab();
-    } catch (e) { showToast('Error: '+e.message,'error'); } finally { hideLoading(); event.target.value = ''; }
+    try { 
+        showLoading(); 
+        var text = await file.text(); 
+        var lines = text.split('\n'); 
+        if (lines.length < 2) throw new Error('File is empty or missing data');
+        var headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        var idxSid = headers.findIndex(h => h.includes('student'));
+        var idxMod = headers.findIndex(h => h.includes('module'));
+        var idxExam = headers.findIndex(h => h.includes('exam') || h.includes('score'));
+        if (idxSid < 0) idxSid = 0;
+        if (idxMod < 0) idxMod = 1;
+        if (idxExam < 0) idxExam = 2;
+        var scores = [];
+        for (var i = 1; i < lines.length; i++) { 
+            var p = lines[i].split(','); 
+            if (p.length <= Math.max(idxSid, idxMod, idxExam)) continue; 
+            var sid = parseInt(p[idxSid].trim());
+            var modStr = p[idxMod].trim().replace(/[^\d]/g, ''); // Extract just the number from module string
+            var mod = parseInt(modStr || p[idxMod].trim()); 
+            var ex = parseFloat(p[idxExam].trim()); 
+            if (!isNaN(sid)&&!isNaN(mod)&&!isNaN(ex)) scores.push({ student_id: sid, module_number: mod, module_name: 'Module '+mod, quiz_score:0, practical_score:0, exam_score:ex }); 
+        }
+        if (scores.length === 0) throw new Error('No valid scores found. Check template format.');
+        await API.performance.saveBulk({ scores: scores }); 
+        showToast(scores.length+' exam scores uploaded','success'); 
+        allScores = await API.performance.get(); 
+        await loadPerformanceTab();
+    } catch (e) { 
+        showToast('Error: '+e.message,'error'); 
+    } finally { 
+        hideLoading(); 
+        event.target.value = ''; 
+    }
 }
 
 async function loadCombinedScores(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();

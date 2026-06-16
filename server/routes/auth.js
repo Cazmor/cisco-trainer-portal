@@ -141,17 +141,23 @@ router.post('/forgot-password', async (req, res) => {
                     html: `<p>You requested a password reset.</p><p>Please click the following link to reset your password:</p><a href="${finalResetLink}">${finalResetLink}</a>`
                 });
                 console.log("Password reset email sent to " + email);
+                res.json({ message: 'Password reset link has been sent to your email.' });
             } else {
                 console.log("SMTP not configured. Printing password reset link (Fallback):", finalResetLink);
+                // In a real app, do not return the link in the response. Since SMTP isn't set up, we return it for testing.
+                res.json({ 
+                    message: 'Password reset link generated (Test Mode).',
+                    resetLink: finalResetLink 
+                });
             }
         } catch (emailError) {
             console.error("Failed to send email. Falling back to console log. Error:", emailError);
             console.log("Password reset link (Fallback):", finalResetLink);
+            res.json({ 
+                message: 'Password reset link generated (Test Mode).',
+                resetLink: finalResetLink 
+            });
         }
-
-        res.json({
-            message: 'Password reset link has been sent to your email.'
-        });
     } catch (error) {
         console.error('Forgot password error:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -215,6 +221,42 @@ router.put('/me', authenticateToken, async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Update profile error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.post('/change-password', authenticateToken, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current password and new password are required' });
+        }
+        
+        if (!isStrongPassword(newPassword)) {
+            return res.status(400).json({ error: 'New password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
+        }
+        
+        const result = await query("SELECT password_hash FROM users WHERE id = $1", [req.user.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const user = result.rows[0];
+        const validPassword = await bcrypt.compare(currentPassword, user.password_hash);
+        
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Incorrect current password' });
+        }
+        
+        const salt = await bcrypt.genSalt(10);
+        const password_hash = await bcrypt.hash(newPassword, salt);
+        
+        await query("UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2", [password_hash, req.user.id]);
+        
+        res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Change password error:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
