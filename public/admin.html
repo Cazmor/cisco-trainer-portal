@@ -104,6 +104,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:10px 12px
 <script>
 var API='/api';var centres=[];var users=[];var charts={};
 function getToken(){return localStorage.getItem('token')}
+function getUser(){var u=localStorage.getItem('user');return u?JSON.parse(u):null;}
 function logout(){localStorage.clear();location.href='/login.html'}
 function showLoading(){var el=document.getElementById('dashContent');if(el)el.innerHTML='<p style="color:var(--muted)">Loading...</p>';}
 function showModal(id){document.getElementById(id).classList.add('show')}
