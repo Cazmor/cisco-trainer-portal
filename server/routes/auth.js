@@ -4,6 +4,16 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { query } = require('../database/db');
 const { authenticateToken, generateToken } = require('../middleware/auth');
+const nodemailer = require('nodemailer');
+
+function isStrongPassword(password) {
+    const minLength = 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[^A-Za-z0-9]/.test(password);
+    return password.length >= minLength && hasUpper && hasLower && hasNumber && hasSpecial;
+}
 
 router.post('/login', async (req, res) => {
     try {
@@ -68,6 +78,9 @@ router.post('/register', async (req, res) => {
         if (!name || !email || !password) {
             return res.status(400).json({ error: 'Name, email, and password are required' });
         }
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
+        }
         const existingUser = await query("SELECT id FROM users WHERE email = $1", [email]);
         if (existingUser.rows.length > 0) {
             return res.status(409).json({ error: 'Email already registered' });
@@ -105,10 +118,39 @@ router.post('/forgot-password', async (req, res) => {
             "INSERT INTO password_resets (user_id, token, expires_at) VALUES ($1, $2, $3)",
             [result.rows[0].id, token, expires_at]
         );
+
+        const origin = req.headers.origin || req.protocol + '://' + req.get('host');
+        const finalResetLink = `${origin}/reset-password.html?token=${token}`;
+
+        try {
+            if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+                const transporter = nodemailer.createTransport({
+                    host: process.env.SMTP_HOST,
+                    port: process.env.SMTP_PORT || 587,
+                    secure: process.env.SMTP_SECURE === 'true',
+                    auth: {
+                        user: process.env.SMTP_USER,
+                        pass: process.env.SMTP_PASS
+                    }
+                });
+                await transporter.sendMail({
+                    from: process.env.SMTP_FROM || '"Cisco Trainer Portal" <noreply@example.com>',
+                    to: email,
+                    subject: 'Password Reset Request',
+                    text: `You requested a password reset. Please click the following link to reset your password: ${finalResetLink}`,
+                    html: `<p>You requested a password reset.</p><p>Please click the following link to reset your password:</p><a href="${finalResetLink}">${finalResetLink}</a>`
+                });
+                console.log("Password reset email sent to " + email);
+            } else {
+                console.log("SMTP not configured. Printing password reset link (Fallback):", finalResetLink);
+            }
+        } catch (emailError) {
+            console.error("Failed to send email. Falling back to console log. Error:", emailError);
+            console.log("Password reset link (Fallback):", finalResetLink);
+        }
+
         res.json({
-            message: 'Password reset link generated',
-            resetLink: 'https://cisco-trainer-portal-1.onrender.com/reset-password.html?token=' + token,
-            token: token
+            message: 'Password reset link has been sent to your email.'
         });
     } catch (error) {
         console.error('Forgot password error:', error);
@@ -121,6 +163,9 @@ router.post('/reset-password', async (req, res) => {
         const { token, newPassword } = req.body;
         if (!token || !newPassword) {
             return res.status(400).json({ error: 'Token and new password are required' });
+        }
+        if (!isStrongPassword(newPassword)) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.' });
         }
         const result = await query("SELECT user_id, expires_at, used FROM password_resets WHERE token = $1", [token]);
         if (result.rows.length === 0) {
