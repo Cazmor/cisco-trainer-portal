@@ -233,11 +233,11 @@ async function viewCurrentModules() {
 
 function loadDataTab(content) {
     content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-database"></i> Data Management</h3>' +
-        '<div class="grid-2" style="gap:16px;margin-bottom:20px">' +
-            '<div style="padding:20px;background:#f8fafc;border-radius:12px;text-align:center"><i class="fas fa-download" style="font-size:32px;color:#3b82f6"></i><h4 style="margin-top:8px">Export All Data</h4><p style="font-size:13px;color:var(--text-secondary)">Download complete system data</p><button class="btn btn-primary btn-sm" onclick="exportData()">Export</button></div>' +
-            '<div style="padding:20px;background:#f8fafc;border-radius:12px;text-align:center"><i class="fas fa-upload" style="font-size:32px;color:#10b981"></i><h4 style="margin-top:8px">Import Data</h4><p style="font-size:13px;color:var(--text-secondary)">Restore from backup file</p><button class="btn btn-outline btn-sm" onclick="showToast(\'Import coming soon\',\'info\')">Import</button></div>' +
-            '<div style="padding:20px;background:#f8fafc;border-radius:12px;text-align:center"><i class="fas fa-cloud-download-alt" style="font-size:32px;color:#8b5cf6"></i><h4 style="margin-top:8px">Download Backup</h4><p style="font-size:13px;color:var(--text-secondary)">Full system backup</p><button class="btn btn-outline btn-sm" onclick="exportData()">Backup</button></div>' +
-            '<div style="padding:20px;background:#fef2f2;border-radius:12px;text-align:center"><i class="fas fa-exclamation-triangle" style="font-size:32px;color:#ef4444"></i><h4 style="margin-top:8px">Reset System</h4><p style="font-size:13px;color:var(--text-secondary)">Clear all data</p><button class="btn btn-danger btn-sm" onclick="resetSystem()">Reset</button></div>' +
+        '<div class="grid-2" style="margin-bottom:20px">' +
+            '<div class="data-card"><i class="fas fa-download" style="color:#3b82f6"></i><h4>Export All Data</h4><p>Download complete system data</p><button class="btn btn-primary btn-sm" onclick="exportData()">Export</button></div>' +
+            '<div class="data-card"><i class="fas fa-upload" style="color:#10b981"></i><h4>Import Data</h4><p>Restore from backup file</p><button class="btn btn-outline btn-sm" onclick="showToast(\'Import coming soon\',\'info\')">Import</button></div>' +
+            '<div class="data-card"><i class="fas fa-cloud-download-alt" style="color:#8b5cf6"></i><h4>Download Backup</h4><p>Full system backup</p><button class="btn btn-outline btn-sm" onclick="exportData()">Backup</button></div>' +
+            '<div class="data-card" style="border-color:#ef4444;background:linear-gradient(135deg, rgba(254,242,242,0.9), rgba(254,242,242,0.6))"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i><h4 style="color:#ef4444">Reset System</h4><p>Clear all data</p><button class="btn btn-danger btn-sm" onclick="resetSystem()">Reset</button></div>' +
         '</div></div>';
 }
 

@@ -25,6 +25,21 @@ router.post('/generate', async (req, res) => {
             case 'report_writing':
                 aiResponse = "Report Template:\n\n1. Executive Summary\n2. Key Metrics\n3. Challenges Faced\n4. Action Items\n5. Next Steps\n\nWould you like me to help fill in any section?";
                 break;
+            case 'survey_generation':
+                // For a simulated AI, we just return a formatted JSON survey block based on their topic.
+                // Normally we would pass `lastMessage.content` to an LLM.
+                const topic = lastMessage.content || 'General';
+                aiResponse = JSON.stringify({
+                    title: topic + " Feedback Survey",
+                    questions: [
+                        "How satisfied are you with the " + topic.toLowerCase() + " module overall?",
+                        "How clear were the instructions provided?",
+                        "What is one thing that could be improved?",
+                        "How would you rate the pacing of the material?",
+                        "Any additional comments or feedback?"
+                    ]
+                });
+                break;
             default:
                 aiResponse = "I can help with lesson planning, student assessments, lab optimization, and report writing. What do you need help with?";
         }

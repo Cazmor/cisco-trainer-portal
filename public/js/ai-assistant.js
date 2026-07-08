@@ -5,7 +5,7 @@ var reportData = {};
 async function loadAIPage() {
     var contentArea = document.getElementById('contentArea');
     if (!contentArea) return;
-    contentArea.innerHTML = '<div class="ai-container"><div class="ai-header"><i class="fas fa-robot"></i><h2>AI Teaching Assistant</h2><p>No typing needed - just click choices. I will handle the rest.</p></div><div class="ai-flow-selector" id="flowSelector"><div class="flow-card" onclick="startAIFlow(\'daily_report\')"><i class="fas fa-calendar-check"></i><h4>Daily Report Wizard</h4><p>Fill your daily report with button choices</p></div><div class="flow-card" onclick="startAIFlow(\'lesson_plan\')"><i class="fas fa-book-open"></i><h4>Smart Lesson Planner</h4><p>Build lesson plans by selecting modules</p></div><div class="flow-card" onclick="startAIFlow(\'student_support\')"><i class="fas fa-hand-holding-heart"></i><h4>Student Intervention</h4><p>Identify & support struggling students</p></div><div class="flow-card" onclick="startAIFlow(\'lab_help\')"><i class="fas fa-microchip"></i><h4>Lab Issue Reporter</h4><p>Report and track lab issues</p></div><div class="flow-card" onclick="startAIFlow(\'survey_distribute\')"><i class="fas fa-paper-plane"></i><h4>Survey Distribution</h4><p>Send surveys to students via email</p></div><div class="flow-card" onclick="startAIFlow(\'quick_chat\')"><i class="fas fa-comments"></i><h4>Quick Assistant</h4><p>Get instant answers about your system</p></div><div class="flow-card" onclick="startAIFlow(\'weekly_summary\')"><i class="fas fa-file-alt"></i><h4>Weekly Report Generator</h4><p>Auto-generate your weekly summary</p></div></div><div id="chatArea" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><strong id="chatTitle">AI Assistant</strong><button class="btn btn-outline btn-sm" onclick="resetAIFlow()"><i class="fas fa-arrow-left"></i> Back</button></div><div class="chat-container"><div class="chat-messages" id="chatMessages"></div><div id="aiFormArea" style="padding:16px;border-top:1px solid var(--border-color);background:#f8fafc"></div></div></div></div>';
+    contentArea.innerHTML = '<div class="ai-container"><div class="ai-header"><i class="fas fa-robot"></i><h2>AI Teaching Assistant</h2><p>No typing needed - just click choices. I will handle the rest.</p></div><div class="ai-flow-selector" id="flowSelector"><div class="flow-card" onclick="startAIFlow(\'daily_report\')"><i class="fas fa-calendar-check"></i><h4>Daily Report Wizard</h4><p>Fill your daily report with button choices</p></div><div class="flow-card" onclick="startAIFlow(\'lesson_plan\')"><i class="fas fa-book-open"></i><h4>Smart Lesson Planner</h4><p>Build lesson plans by selecting modules</p></div><div class="flow-card" onclick="startAIFlow(\'student_support\')"><i class="fas fa-hand-holding-heart"></i><h4>Student Intervention</h4><p>Identify & support struggling students</p></div><div class="flow-card" onclick="startAIFlow(\'lab_help\')"><i class="fas fa-microchip"></i><h4>Lab Issue Reporter</h4><p>Report and track lab issues</p></div><div class="flow-card" onclick="startAIFlow(\'survey_distribute\')"><i class="fas fa-paper-plane"></i><h4>Survey Distribution</h4><p>Send surveys to students via email</p></div><div class="flow-card" onclick="startAIFlow(\'survey_create\')"><i class="fas fa-magic"></i><h4>AI Survey Creator</h4><p>Generate surveys from a topic</p></div><div class="flow-card" onclick="startAIFlow(\'quick_chat\')"><i class="fas fa-comments"></i><h4>Quick Assistant</h4><p>Get instant answers about your system</p></div><div class="flow-card" onclick="startAIFlow(\'weekly_summary\')"><i class="fas fa-file-alt"></i><h4>Weekly Report Generator</h4><p>Auto-generate your weekly summary</p></div></div><div id="chatArea" style="display:none"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><strong id="chatTitle">AI Assistant</strong><button class="btn btn-outline btn-sm" onclick="resetAIFlow()"><i class="fas fa-arrow-left"></i> Back</button></div><div class="chat-container"><div class="chat-messages" id="chatMessages"></div><div id="aiFormArea" style="padding:16px;border-top:1px solid var(--border-color);background:#f8fafc"></div></div></div></div>';
 }
 
 function startAIFlow(flow) {
@@ -13,13 +13,14 @@ function startAIFlow(flow) {
     document.getElementById("flowSelector").style.display = "none";
     document.getElementById("chatArea").style.display = "block";
     document.getElementById("chatMessages").innerHTML = "";
-    var titles = { daily_report: "Daily Report Wizard", lesson_plan: "Smart Lesson Planner", student_support: "Student Intervention", lab_help: "Lab Issue Reporter", survey_distribute: "Survey Distribution", quick_chat: "Quick Assistant", weekly_summary: "Weekly Report Generator" };
+    var titles = { daily_report: "Daily Report Wizard", lesson_plan: "Smart Lesson Planner", student_support: "Student Intervention", lab_help: "Lab Issue Reporter", survey_distribute: "Survey Distribution", survey_create: "AI Survey Creator", quick_chat: "Quick Assistant", weekly_summary: "Weekly Report Generator" };
     document.getElementById("chatTitle").textContent = titles[flow] || "AI Assistant";
     if (flow === "daily_report") startDailyReportWizard();
     else if (flow === "lesson_plan") startLessonPlanner();
     else if (flow === "student_support") startStudentWizard();
     else if (flow === "lab_help") startLabReporter();
     else if (flow === "survey_distribute") startSurveyDistribution();
+    else if (flow === "survey_create") startSurveyCreator();
     else if (flow === "quick_chat") startQuickChat();
     else if (flow === "weekly_summary") startWeeklyGenerator();
 }
@@ -44,6 +45,7 @@ function submitCustomResponse() {
     var text = input.value.trim();
     if (currentAIFlow === "daily_report") { if (!reportData.streams) selectReportStreams([text]); else if (!reportData.netacad) nextReportStep("netacad", text); else if (!reportData.lab) nextReportStep("lab", text); else if (!reportData.centre) nextReportStep("centre", text); else if (!reportData.challenges) nextReportStep("challenges", text); else if (!reportData.recommendations) nextReportStep("recommendations", text); }
     else if (currentAIFlow === "lab_help") submitLabIssue(text);
+    else if (currentAIFlow === "survey_create") generateAISurvey(text);
     else { addChatBubble("user", text); quickQuery(text); }
 }
 
@@ -80,6 +82,34 @@ async function sendSurveyToStream(surveyId, stream) {
         addChatBubble("ai", "**Ready!** "+recipients.length+" students from "+(stream==="all"?"all streams":stream));
         showAIForm('<a href="'+mailto+'" target="_blank" class="btn btn-primary">Open Email Client</a> <button class="btn btn-outline" onclick="startSurveyDistribution()">Send Another</button>');
     } catch(e) { hideLoading(); }
+}
+
+function startSurveyCreator() {
+    addChatBubble("ai", "**AI Survey Creator**\n\nWhat topic would you like a survey for? (e.g. 'Python Basics', 'End of module 2', 'Instructor Feedback')");
+    showAIForm('');
+}
+
+async function generateAISurvey(topic) {
+    addChatBubble("user", topic);
+    addChatBubble("ai", "Generating survey for: **" + topic + "**...");
+    try {
+        showLoading();
+        var r = await API.ai.generate({ conversation_type: "survey_generation", messages: [{ role: "user", content: topic }] });
+        var surveyData = JSON.parse(r.response);
+        await API.surveys.create({ title: surveyData.title, questions: surveyData.questions });
+        hideLoading();
+        
+        var msg = "Survey created successfully!\n\n**" + surveyData.title + "**\n";
+        for (var i=0; i<surveyData.questions.length; i++) {
+            msg += (i+1) + ". " + surveyData.questions[i] + "\n";
+        }
+        addChatBubble("ai", msg);
+        showAIForm('<button class="btn btn-outline" onclick="startSurveyCreator()">Create Another</button> <button class="btn btn-primary" onclick="navigateTo(\'surveys\')">View Surveys</button>');
+    } catch (e) {
+        hideLoading();
+        addChatBubble("ai", "Sorry, there was an error generating the survey: " + e.message);
+        showAIForm('<button class="btn btn-outline" onclick="startSurveyCreator()">Try Again</button>');
+    }
 }
 
 async function startLessonPlanner() { addChatBubble("ai","Select a module:"); try { showLoading(); var c=await API.curriculum.get(); hideLoading(); var mods={};for(var i=0;i<c.length;i++){if(!mods[c[i].module_number])mods[c[i].module_number]=c[i].module_name;} var html='<div style="display:flex;flex-wrap:wrap;gap:6px">';for(var k in mods) html+='<button class="btn btn-outline btn-sm" onclick="selectLessonModule('+k+')">Module '+k+': '+mods[k].substring(0,30)+'</button>'; html+='</div>'; showAIForm(html); } catch(e) { hideLoading(); } }

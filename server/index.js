@@ -133,6 +133,11 @@ app.get('/api/check-users', async (req, res) => {
     }
 });
 
+// Serve survey frontend
+app.get('/surveys/:id', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'survey.html'));
+});
+
 
 // 404 handler
 app.use((req, res) => {

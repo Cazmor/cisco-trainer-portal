@@ -31,7 +31,16 @@ router.get('/scorecard', async (req, res) => {
         kpis.push({ id: 4, name: 'Weekly Reports', value: reportScore, target: 100, unit: '%' });
         
         // KPI 5: Learner Satisfaction (≥60%)
-        kpis.push({ id: 5, name: 'Learner Satisfaction', value: 72, target: 60, unit: '%' });
+        const surveyResult = await query(
+            `SELECT AVG(sr.score) as avg_score 
+             FROM survey_responses sr 
+             JOIN survey_questions sq ON sr.question_id = sq.id 
+             JOIN surveys s ON sq.survey_id = s.id 
+             WHERE s.centre_id = $1 AND sq.question_type = 'rating'`, 
+            [centreId]
+        );
+        const satisfactionScore = surveyResult.rows[0].avg_score ? Math.round((surveyResult.rows[0].avg_score / 5) * 100) : 0;
+        kpis.push({ id: 5, name: 'Learner Satisfaction', value: satisfactionScore, target: 60, unit: '%' });
         
         // KPI 6: Professional Development (2 courses/yr)
         const devResult = await query("SELECT COUNT(*) as count FROM professional_development WHERE user_id = $1", [req.user.id]);
@@ -55,6 +64,7 @@ router.get('/evidence/:kpiId', async (req, res) => {
         if (kpiId === 1) { const data = await query("SELECT * FROM lab_workstations WHERE centre_id = $1", [centreId]); evidence = { workstations: data.rows }; }
         else if (kpiId === 2) { const data = await query("SELECT module_number, module_name, AVG(total_score) as avg_score FROM performance_scores ps JOIN students s ON ps.student_id = s.id WHERE s.centre_id = $1 GROUP BY module_number, module_name ORDER BY module_number", [centreId]); evidence = { module_scores: data.rows }; }
         else if (kpiId === 4) { const data = await query("SELECT * FROM weekly_reports WHERE centre_id = $1 ORDER BY week_start_date DESC LIMIT 10", [centreId]); evidence = { reports: data.rows }; }
+        else if (kpiId === 5) { const data = await query("SELECT title, created_at FROM surveys WHERE centre_id = $1 ORDER BY created_at DESC", [centreId]); evidence = { surveys: data.rows }; }
         else if (kpiId === 7) { const data = await query("SELECT * FROM innovation_log WHERE centre_id = $1 ORDER BY created_at DESC", [centreId]); evidence = { innovations: data.rows }; }
         res.json(evidence);
     } catch (error) { res.status(500).json({ error: error.message }); }

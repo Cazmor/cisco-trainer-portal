@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learner Feedback Survey</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .survey-container {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 600px;
+        }
+
+        h1 {
+            margin-top: 0;
+            color: var(--primary);
+            font-size: 24px;
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 15px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .rating-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .rating-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: var(--bg-color);
+            border-radius: 6px;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .rating-label:hover {
+            background: #e2e8f0;
+        }
+
+        .rating-label input[type="radio"] {
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            background: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: var(--error);
+            border: 1px solid #fee2e2;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: var(--success);
+            border: 1px solid #d1fae5;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="survey-container">
+        <div id="loadingState" class="loading">
+            <i class="fas fa-circle-notch fa-spin fa-2x"></i>
+            <p style="margin-top:15px">Loading survey...</p>
+        </div>
+        
+        <div id="errorAlert" class="alert alert-error"></div>
+        <div id="successAlert" class="alert alert-success"></div>
+        
+        <div id="surveyFormContainer" style="display: none;">
+            <h1 id="surveyTitle">Survey</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 25px;">Please provide your email address to verify your identity, then answer the questions below.</p>
+            
+            <form id="surveyForm">
+                <div class="form-group">
+                    <label for="studentEmail">Your Email Address <span style="color:var(--error)">*</span></label>
+                    <input type="email" id="studentEmail" class="form-control" required placeholder="Enter your registered email">
+                </div>
+                
+                <div id="questionsContainer"></div>
+                
+                <button type="submit" id="submitBtn" class="btn">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const surveyId = window.location.pathname.split('/').pop();
+        
+        async function loadSurvey() {
+            try {
+                const response = await fetch(`/api/surveys/public/${surveyId}`);
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Survey not found');
+                }
+                const survey = await response.json();
+                
+                document.getElementById('surveyTitle').textContent = survey.title;
+                
+                const qContainer = document.getElementById('questionsContainer');
+                let html = '';
+                
+                survey.questions.forEach((q, index) => {
+                    html += `
+                        <div class="form-group">
+                            <label>${index + 1}. ${q.question_text} <span style="color:var(--error)">*</span></label>`;
+                    
+                    if (q.question_type === 'text') {
+                        html += `<input type="text" name="q_${q.id}" data-type="text" class="form-control survey-input" required placeholder="Your answer...">`;
+                    } else if (q.question_type === 'multiple_choice') {
+                        const opts = q.options || [];
+                        html += `<div class="options-group">`;
+                        opts.forEach(opt => {
+                            html += `
+                                <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer">
+                                    <input type="radio" name="q_${q.id}" data-type="multiple_choice" value="${opt}" class="survey-input" required>
+                                    ${opt}
+                                </label>`;
+                        });
+                        html += `</div>`;
+                    } else {
+                        html += `<div class="rating-group">
+                            ${[1, 2, 3, 4, 5].map(rating => `
+                                <label class="rating-label">
+                                    <input type="radio" name="q_${q.id}" data-type="rating" value="${rating}" class="survey-input" required>
+                                    ${rating}
+                                </label>
+                            `).join('')}
+                        </div>`;
+                    }
+                    html += `</div>`;
+                });
+                
+                qContainer.innerHTML = html;
+                
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('surveyFormContainer').style.display = 'block';
+            } catch (error) {
+                document.getElementById('loadingState').style.display = 'none';
+                const errAlert = document.getElementById('errorAlert');
+                errAlert.style.display = 'block';
+                errAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+            }
+        }
+
+        document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('submitBtn');
+            const errAlert = document.getElementById('errorAlert');
+            const sucAlert = document.getElementById('successAlert');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            errAlert.style.display = 'none';
+            
+            try {
+                const email = document.getElementById('studentEmail').value;
+                const responses = [];
+                
+                const inputs = document.querySelectorAll('.survey-input');
+                const processed = {};
+                
+                inputs.forEach(input => {
+                    if (!input.name) return;
+                    const qId = parseInt(input.name.replace('q_', ''));
+                    if (processed[qId]) return;
+                    
+                    if (input.type === 'radio') {
+                        const selected = document.querySelector(`input[name="${input.name}"]:checked`);
+                        if (selected) {
+                            const val = selected.value;
+                            const type = selected.getAttribute('data-type');
+                            if (type === 'rating') {
+                                responses.push({ question_id: qId, score: parseInt(val), response_text: val });
+                            } else {
+                                responses.push({ question_id: qId, score: null, response_text: val });
+                            }
+                        }
+                        processed[qId] = true;
+                    } else if (input.type === 'text') {
+                        responses.push({ question_id: qId, score: null, response_text: input.value });
+                        processed[qId] = true;
+                    }
+                });
+                
+                const res = await fetch(`/api/surveys/public/${surveyId}/respond`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, responses })
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.error || 'Failed to submit response');
+                }
+                
+                document.getElementById('surveyFormContainer').style.display = 'none';
+                sucAlert.style.display = 'block';
+                sucAlert.innerHTML = `<i class="fas fa-check-circle"></i> ${data.message}`;
+            } catch (error) {
+                errAlert.style.display = 'block';
+                errAlert.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
+                btn.disabled = false;
+                btn.textContent = 'Submit Feedback';
+            }
+        });
+
+        // Initialize
+        loadSurvey();
+    </script>
+</body>
+</html>

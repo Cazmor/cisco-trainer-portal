@@ -53,11 +53,12 @@ function checkAuth() {
     var token = localStorage.getItem('token');
     var user = localStorage.getItem('user');
     
-    var publicPages = ['login.html', 'register.html', 'forgot-password.html'];
+    var publicPages = ['login.html', 'register.html', 'forgot-password.html', 'survey.html'];
     var currentPage = window.location.pathname.split('/').pop();
+    var isPublicSurvey = window.location.pathname.startsWith('/surveys/');
     
     if (!token || !user) {
-        if (publicPages.indexOf(currentPage) === -1) {
+        if (publicPages.indexOf(currentPage) === -1 && !isPublicSurvey) {
             window.location.href = '/login.html';
         }
         return false;

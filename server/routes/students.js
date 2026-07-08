@@ -54,7 +54,7 @@ router.put('/:id', requireRole('admin', 'instructor', 'super_admin'), async (req
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.delete('/:id', requireRole('admin', 'super_admin'), async (req, res) => {
+router.delete('/:id', requireRole('admin', 'super_admin', 'instructor'), async (req, res) => {
     try { await query("DELETE FROM students WHERE id=$1", [req.params.id]); res.json({ message: 'Deleted' }); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -46,9 +46,9 @@ var kpiDefinitions = [
     {
         id: 5, name: 'Quarterly Surveys >60% Satisfaction', target: '>60%', icon: 'fa-smile',
         subObjectives: [
-            { name: 'Survey response rate 70%', scale: ['<40%','40-49%','50-59%','60-69%','>70%'], evidence: 'feedback', autoScore: true },
-            { name: 'Learner satisfaction >65%', scale: ['<40%','40-49%','50-59%','60-69%','>70%'], evidence: 'feedback', autoScore: true },
-            { name: 'Issues documented & discussed', scale: ['Documented','50% discussed','75% discussed','90% discussed','100% resolved'], evidence: 'feedback', autoScore: true }
+            { name: 'Survey response rate 70%', scale: ['<40%','40-49%','50-59%','60-69%','>70%'], evidence: 'surveys', autoScore: true },
+            { name: 'Learner satisfaction >65%', scale: ['<40%','40-49%','50-59%','60-69%','>70%'], evidence: 'surveys', autoScore: true },
+            { name: 'Issues documented & discussed', scale: ['Documented','50% discussed','75% discussed','90% discussed','100% resolved'], evidence: 'surveys', autoScore: true }
         ]
     },
     {
@@ -153,7 +153,7 @@ async function autoScoreFromSystem() {
         key = 'kpi_5';
         if (!subScores[key]) {
             var fbScore = feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : feedbackCount >= 1 ? 2 : 1;
-            var satScore = avgPerf >= 70 ? 4 : avgPerf >= 50 ? 3 : 2;
+            var satScore = avgScore >= 70 ? 4 : avgScore >= 50 ? 3 : 2;
             var docScore = feedbackCount >= 15 ? 5 : feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : 2;
             subScores[key] = [fbScore, satScore, docScore];
         }
@@ -251,7 +251,7 @@ function viewSubEvidence(evidenceType) {
         navigateTo('settings');
         setTimeout(function() { switchSettingsTab('cpd'); }, 300);
     } else if (evidenceType === 'surveys') {
-        showToast('Survey module coming soon', 'info');
+        navigateTo('surveys');
     } else if (evidenceType === 'insights') {
         navigateTo('reports');
         setTimeout(function() { switchReportsTab('insights'); }, 300);

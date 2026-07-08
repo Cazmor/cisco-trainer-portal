@@ -453,3 +453,11 @@ CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_classes_scheduled_date ON classes_scheduled(date);
 CREATE INDEX idx_daily_reports_date ON daily_reports(date);
 CREATE INDEX idx_weekly_reports_dates ON weekly_reports(week_start_date, week_end_date);
+
+-- CSV Templates table
+CREATE TABLE csv_templates (
+    type VARCHAR(50) PRIMARY KEY,
+    content TEXT NOT NULL,
+    updated_by INTEGER REFERENCES users(id),
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

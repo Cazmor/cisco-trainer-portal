@@ -30,6 +30,15 @@ async function setupDatabase() {
         await client.query(seedSQL);
         console.log('Seed data inserted successfully!');
         
+        console.log('Reading setup_surveillance.sql...');
+        const surveillancePath = path.join(__dirname, 'setup_surveillance.sql');
+        if (fs.existsSync(surveillancePath)) {
+            const surveillanceSQL = fs.readFileSync(surveillancePath, 'utf8');
+            console.log('Creating surveillance schema...');
+            await client.query(surveillanceSQL);
+            console.log('Surveillance schema created successfully!');
+        }
+        
         console.log('Updating user passwords with proper hashes...');
         
         const passwords = {
