@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8"/>
 <title>Super Admin - Cisco Trainer</title>
@@ -159,7 +159,7 @@ else if(page==='reports')loadReports();
 else if(page==='alerts')loadAlerts();
 }
 function updateAlertBadge(){try{apiFetch("/surveillance/alerts").then(function(a){var b=document.getElementById("alertBadge");if(!b)return;var red=a.filter(function(x){return x.alert_type==="red"}).length;if(red>0){b.style.display="inline";b.textContent=red;b.style.background="var(--danger)";}else{b.style.display="none";}}).catch(function(){});}catch(e){}}
-function toggleTheme(){var b=document.body;b.classList.toggle("light");var btn=document.getElementById("themeBtn");if(b.classList.contains("light")){btn.innerHTML='<i class="fa-solid fa-moon"></i> Dark';}else{btn.innerHTML='<i class="fa-solid fa-sun"></i> Light';}}
+function toggleTheme(){var b=document.body;b.classList.toggle("light");var btn=document.getElementById("themeBtn");if(b.classList.contains("light")){btn.innerHTML='<i class="fa-solid fa-moon"></i> Dark';document.documentElement.setAttribute('data-theme', 'light');}else{btn.innerHTML='<i class="fa-solid fa-sun"></i> Light';document.documentElement.setAttribute('data-theme', 'dark');}}
 function refresh(){var a=document.querySelector('#nav .nav-item.active');var p=a?a.dataset.page:'dashboard';nav(p)}
 
 // DASHBOARD
