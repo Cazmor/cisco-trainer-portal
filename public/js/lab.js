@@ -78,7 +78,7 @@ function showWS(stNum) {
     for (var i=0;i<items.length;i++) {
         var e = items[i]; var isOK = e.status==='available'||e.status==='in-use';
         var icon = e.equipment_type.toLowerCase().includes('monitor')?'tv':e.equipment_type.toLowerCase().includes('keyboard')?'keyboard':e.equipment_type.toLowerCase().includes('mouse')?'mouse':'desktop';
-        body += '<div style="padding:16px;background:#f8fafc;border-radius:12px;text-align:center;cursor:pointer" onclick="quickReport(\''+e.equipment_type+'\','+e.id+',\''+stNum+'\')"><i class="fas fa-'+icon+'" style="font-size:28px;color:'+(isOK?'#10b981':'#ef4444')+'"></i><h4 style="margin-top:8px">'+e.equipment_type+'</h4><p style="font-size:11px">'+e.model+'</p><p style="font-size:10px"><code>'+e.serial_number+'</code></p><span class="badge badge-'+(isOK?'success':'danger')+'">'+(isOK?'Working':'Needs Repair')+'</span></div>';
+        body += '<div style="padding:16px;background:var(--bg-secondary);border-radius:12px;text-align:center;cursor:pointer" onclick="quickReport(\''+e.equipment_type+'\','+e.id+',\''+stNum+'\')"><i class="fas fa-'+icon+'" style="font-size:28px;color:'+(isOK?'#10b981':'#ef4444')+'"></i><h4 style="margin-top:8px">'+e.equipment_type+'</h4><p style="font-size:11px">'+e.model+'</p><p style="font-size:10px"><code>'+e.serial_number+'</code></p><span class="badge badge-'+(isOK?'success':'danger')+'">'+(isOK?'Working':'Needs Repair')+'</span></div>';
     }
     body += '</div>'; document.getElementById('wsBody').innerHTML = body; showModal('wsModal');
 }

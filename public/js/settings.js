@@ -128,7 +128,7 @@ function loadCurriculumTab(content) {
         '<button class="btn btn-outline" onclick="viewCurrentModules()"><i class="fas fa-eye"></i> View Current Modules</button>' +
         '<hr style="margin:24px 0">' +
         '<h4 style="margin-bottom:12px">About</h4>' +
-        '<div style="background:#f8fafc;padding:20px;border-radius:12px">' +
+        '<div style="background:var(--bg-secondary);padding:20px;border-radius:12px">' +
             '<p><strong>Cisco Trainer Progress Tracking System</strong></p>' +
             '<p style="color:var(--text-secondary)">Version: 2.0.0 | Build: 2026</p>' +
             '<p style="color:var(--text-secondary)">© 2026 Cisco Networking Academy</p>' +
@@ -300,7 +300,7 @@ function loadSecurityTab(content) {
         '<form id="changePasswordForm" class="settings-form">' +
             '<div class="form-group"><label>Current Password *</label><input type="password" id="currentPassword" class="form-control" required></div>' +
             '<div class="form-group"><label>New Password *</label><input type="password" id="newPassword" class="form-control" required minlength="8">' +
-            '<div id="password-requirements" style="margin-top: 8px; font-size: 13px; color: #64748b; background: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">' +
+            '<div id="password-requirements" style="margin-top: 8px; font-size: 13px; color: #64748b; background: var(--bg-secondary); padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0;">' +
                 '<div style="margin-bottom: 4px; font-weight: 600; color: #334155;">Password requirements:</div>' +
                 '<div id="req-length" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> At least 8 characters</div>' +
                 '<div id="req-upper" style="color: #ef4444; margin-bottom: 2px;"><i class="fas fa-times-circle"></i> One uppercase letter</div>' +

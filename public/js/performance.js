@@ -217,7 +217,7 @@ async function loadFeedback(content) {
     var feedback = await API.performance.getFeedback();
     var html = '<div class="card"><div class="card-header"><h3>Student Feedback</h3><button class="btn btn-primary" onclick="showFeedbackModal()"><i class="fas fa-plus"></i> Add</button></div>';
     if (feedback.length === 0) html += '<div class="empty-state"><p>No feedback yet</p></div>';
-    else for (var i = 0; i < feedback.length; i++) { var fb = feedback[i]; html += '<div style="background:#f8fafc;border-left:4px solid #3b82f6;border-radius:8px;padding:16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between"><strong>' + fb.first_name + ' ' + fb.last_name + '</strong><span class="badge badge-info">' + fb.category + '</span></div><p>' + fb.feedback_text + '</p><small>' + (fb.given_by_name||'Unknown') + ' | ' + formatDate(fb.date_given) + '</small></div>'; }
+    else for (var i = 0; i < feedback.length; i++) { var fb = feedback[i]; html += '<div style="background:var(--bg-secondary);border-left:4px solid #3b82f6;border-radius:8px;padding:16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between"><strong>' + fb.first_name + ' ' + fb.last_name + '</strong><span class="badge badge-info">' + fb.category + '</span></div><p>' + fb.feedback_text + '</p><small>' + (fb.given_by_name||'Unknown') + ' | ' + formatDate(fb.date_given) + '</small></div>'; }
     html += '</div>'; content.innerHTML = html;
 }
 

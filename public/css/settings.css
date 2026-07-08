@@ -18,7 +18,7 @@
     background: rgba(255, 255, 255, 0.4);
     padding: 8px;
     border-radius: 16px;
-    overflow-x: auto;
+    flex-wrap: wrap;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -376,3 +376,36 @@ input:checked + .toggle-slider:before {
 .settings-section tr:hover td {
     background: rgba(255,255,255,0.5);
 }
+
+/* Dark Theme Overrides for Settings */
+[data-theme="dark"] .settings-nav {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .settings-section {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .settings-form .form-control {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+[data-theme="dark"] .toggle-switch,
+[data-theme="dark"] .data-card,
+[data-theme="dark"] .cpd-card {
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+[data-theme="dark"] .toggle-switch:hover,
+[data-theme="dark"] .data-card:hover,
+[data-theme="dark"] .cpd-card:hover {
+    background: rgba(15, 23, 42, 0.8);
+}
+[data-theme="dark"] .profile-avatar {
+    border-color: var(--bg-secondary);
+}
+[data-theme="dark"] .settings-nav-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+

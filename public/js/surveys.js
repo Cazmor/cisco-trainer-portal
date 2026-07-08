@@ -35,7 +35,7 @@ function showCreateSurvey() {
 
 function getSurveyQuestionRowHTML() {
     return `
-        <div class="dynamic-question-row" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: #f8fafc;">
+        <div class="dynamic-question-row" style="border: 1px solid var(--border-color); padding: 12px; border-radius: 6px; margin-bottom: 12px; background: var(--bg-secondary);">
             <div style="display:flex;gap:8px;margin-bottom:8px">
                 <input type="text" class="form-control survey-question-input" required placeholder="Question text..." style="flex:1">
                 <select class="form-control survey-question-type" onchange="toggleOptions(this)" style="width:150px">
@@ -235,7 +235,7 @@ async function viewSurveyResults(id) {
         } else {
             for(var i=0; i<survey.responses.length; i++) { 
                 var r = survey.responses[i]; 
-                html += '<div style="margin-bottom:16px;background:#f8fafc;padding:12px;border-radius:6px;border:1px solid var(--border-color)">';
+                html += '<div style="margin-bottom:16px;background:var(--bg-secondary);padding:12px;border-radius:6px;border:1px solid var(--border-color)">';
                 html += '<div style="display:flex;justify-content:space-between;margin-bottom:8px"><strong>' + r.question_text + '</strong><span class="badge badge-info">' + r.response_count + ' responses</span></div>';
                 
                 if (r.question_type === 'rating' || !r.question_type) {
