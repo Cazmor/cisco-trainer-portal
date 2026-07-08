@@ -88,4 +88,53 @@ router.delete('/development/:id', async (req, res) => {
     try { await query("DELETE FROM professional_development WHERE id = $1 AND user_id = $2", [req.params.id, req.user.id]); res.json({ message: 'Deleted' }); } catch (error) { res.status(500).json({ error: 'Internal server error' }); }
 });
 
+router.post('/import', requireRole('admin', 'super_admin'), async (req, res) => {
+    try {
+        const { students } = req.body;
+        const centreId = req.user.centre_id;
+        
+        if (students && Array.isArray(students)) {
+            for (const s of students) {
+                if (!s.first_name || !s.last_name || !s.email) continue;
+                
+                // Insert or update
+                await query(`
+                    INSERT INTO students (first_name, last_name, email, phone, stream, status, centre_id)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (email) DO UPDATE 
+                    SET first_name = $1, last_name = $2, phone = $4, stream = $5, status = $6
+                `, [s.first_name, s.last_name, s.email, s.phone, s.stream, s.status || 'active', centreId]);
+            }
+        }
+        res.json({ message: 'Data imported successfully' });
+    } catch (error) {
+        console.error('Import error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+router.delete('/reset', requireRole('admin', 'super_admin'), async (req, res) => {
+    try {
+        const centreId = req.user.role === 'super_admin' ? null : req.user.centre_id;
+        
+        if (centreId) {
+            await query("DELETE FROM performance_scores WHERE student_id IN (SELECT id FROM students WHERE centre_id = $1)", [centreId]);
+            await query("DELETE FROM attendance_records WHERE student_id IN (SELECT id FROM students WHERE centre_id = $1)", [centreId]);
+            await query("DELETE FROM student_feedback WHERE student_id IN (SELECT id FROM students WHERE centre_id = $1)", [centreId]);
+            await query("DELETE FROM students WHERE centre_id = $1", [centreId]);
+            
+            await query("DELETE FROM weekly_reports WHERE centre_id = $1", [centreId]);
+            await query("DELETE FROM innovation_log WHERE user_id IN (SELECT id FROM users WHERE centre_id = $1)", [centreId]);
+            await query("DELETE FROM professional_development WHERE user_id IN (SELECT id FROM users WHERE centre_id = $1)", [centreId]);
+        } else {
+            await query("TRUNCATE TABLE performance_scores, attendance_records, student_feedback, students, weekly_reports, innovation_log, professional_development CASCADE");
+        }
+
+        res.json({ message: 'System data reset successfully' });
+    } catch (error) {
+        console.error('Reset error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

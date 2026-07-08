@@ -235,7 +235,7 @@ function loadDataTab(content) {
     content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-database"></i> Data Management</h3>' +
         '<div class="grid-2" style="margin-bottom:20px">' +
             '<div class="data-card"><i class="fas fa-download" style="color:#3b82f6"></i><h4>Export All Data</h4><p>Download complete system data</p><button class="btn btn-primary btn-sm" onclick="exportData()">Export</button></div>' +
-            '<div class="data-card"><i class="fas fa-upload" style="color:#10b981"></i><h4>Import Data</h4><p>Restore from backup file</p><button class="btn btn-outline btn-sm" onclick="showToast(\'Import coming soon\',\'info\')">Import</button></div>' +
+            '<div class="data-card"><i class="fas fa-upload" style="color:#10b981"></i><h4>Import Data</h4><p>Restore from backup file</p><input type="file" id="importUpload" accept=".csv" style="display:none" onchange="handleImportUpload(event)"><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'importUpload\').click()">Import</button></div>' +
             '<div class="data-card"><i class="fas fa-cloud-download-alt" style="color:#8b5cf6"></i><h4>Download Backup</h4><p>Full system backup</p><button class="btn btn-outline btn-sm" onclick="exportData()">Backup</button></div>' +
             '<div class="data-card" style="border-color:#ef4444;background:linear-gradient(135deg, rgba(254,242,242,0.9), rgba(254,242,242,0.6))"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i><h4 style="color:#ef4444">Reset System</h4><p>Clear all data</p><button class="btn btn-danger btn-sm" onclick="resetSystem()">Reset</button></div>' +
         '</div></div>';
@@ -243,7 +243,57 @@ function loadDataTab(content) {
 
 function exportData() { window.open('/api/settings/export', '_blank'); showToast('Export started!','success'); }
 
-function resetSystem() { if (!confirm('WARNING: This will reset all data. Are you sure?')) return; if (!confirm('FINAL WARNING: All data will be lost. Continue?')) return; showToast('System reset would be performed here','warning'); }
+async function resetSystem() { 
+    if (!confirm('WARNING: This will reset all data. Are you sure?')) return; 
+    if (!confirm('FINAL WARNING: All data will be lost. Continue?')) return; 
+    try {
+        showLoading();
+        await API.settings.resetSystem();
+        showToast('System reset successfully', 'success');
+        setTimeout(() => window.location.reload(), 1500);
+    } catch(e) {
+        hideLoading();
+        showToast('Error: ' + e.message, 'error');
+    }
+}
+
+async function handleImportUpload(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+    try {
+        showLoading();
+        var reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                var text = e.target.result;
+                var rows = text.split('\n');
+                var headers = rows[0].split(',');
+                var data = [];
+                for (var i = 1; i < rows.length; i++) {
+                    if (!rows[i].trim()) continue;
+                    var values = rows[i].split(',');
+                    var obj = {};
+                    for (var j = 0; j < headers.length; j++) {
+                        obj[headers[j].trim()] = values[j] ? values[j].trim() : '';
+                    }
+                    data.push(obj);
+                }
+                
+                await API.settings.importData({ students: data });
+                showToast('Data imported successfully', 'success');
+                event.target.value = '';
+                hideLoading();
+            } catch (err) {
+                hideLoading();
+                showToast('Error parsing file: ' + err.message, 'error');
+            }
+        };
+        reader.readAsText(file);
+    } catch (e) {
+        hideLoading();
+        showToast('Error: ' + e.message, 'error');
+    }
+}
 
 function loadSecurityTab(content) {
     content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-shield-alt"></i> Security Settings</h3>' +
