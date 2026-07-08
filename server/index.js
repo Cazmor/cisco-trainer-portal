@@ -27,6 +27,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files with correct MIME types
 app.use(express.static(path.join(__dirname, '..', 'public'), {
   setHeaders: (res, filePath) => {
+    // Prevent aggressive browser caching during development
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
     } else if (filePath.endsWith('.css')) {
