@@ -31,7 +31,7 @@ function loadDailyTab(content) {
     var html = '<div class="card"><div class="card-header"><h3>Daily Reports</h3><button class="btn btn-primary" onclick="showAIReportModal()"><i class="fas fa-robot"></i> New Report</button></div>';
     if (allDailyReports.length === 0) html += '<div class="empty-state"><p>No reports</p></div>';
     else { html += '<table><thead><tr><th>Date</th><th>Streams</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-        for (var i=0;i<allDailyReports.length;i++) { var r=allDailyReports[i]; html += '<tr><td>'+formatDate(r.date)+'</td><td>'+(r.streams?r.streams.join(', '):'N/A')+'</td><td><span class="badge badge-success">'+r.status+'</span></td><td><button class="btn btn-sm btn-outline" onclick="viewDaily('+r.id+')">View</button> <button class="btn btn-sm btn-danger" onclick="deleteDaily('+r.id+')"><i class="fas fa-trash"></i></button> <button class="btn btn-sm btn-primary" onclick="downloadPDF('+r.id+',\'daily\')"><i class="fas fa-file-pdf"></i> PDF</button></td></tr>'; }
+        for (var i=0;i<allDailyReports.length;i++) { var r=allDailyReports[i]; html += '<tr><td>'+formatDate(r.date)+'</td><td>'+(r.streams?r.streams.join(', '):'N/A')+'</td><td><span class="badge badge-success">'+r.status+'</span></td><td><button class="btn btn-sm btn-outline" onclick="viewDaily('+r.id+')">View</button> <button class="btn btn-sm btn-primary" onclick="shareReport('+r.id+',\'daily\')"><i class="fas fa-envelope"></i> Share</button> <button class="btn btn-sm btn-primary" onclick="downloadPDF('+r.id+',\'daily\')"><i class="fas fa-file-pdf"></i> PDF</button> <button class="btn btn-sm btn-danger" onclick="deleteDaily('+r.id+')"><i class="fas fa-trash"></i></button></td></tr>'; }
         html += '</tbody></table>'; }
     html += '</div>'; content.innerHTML = html;
 }
@@ -40,7 +40,7 @@ function loadWeeklyTab(content) {
     var html = '<div class="card"><div class="card-header"><h3>Weekly Reports</h3><button class="btn btn-primary" onclick="generateWeekly()"><i class="fas fa-magic"></i> Generate</button></div>';
     if (allWeeklyReports.length === 0) html += '<div class="empty-state"><p>No weekly reports</p></div>';
     else { html += '<table><thead><tr><th>Week</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
-        for (var i=0;i<allWeeklyReports.length;i++) { var wr=allWeeklyReports[i]; html += '<tr><td>'+formatDate(wr.week_start_date)+' - '+formatDate(wr.week_end_date)+'</td><td><span class="badge badge-success">'+wr.status+'</span></td><td><button class="btn btn-sm btn-outline" onclick="viewWeekly('+wr.id+')">View</button> <button class="btn btn-sm btn-danger" onclick="deleteWeekly('+wr.id+')"><i class="fas fa-trash"></i></button> <button class="btn btn-sm btn-primary" onclick="downloadPDF('+wr.id+',\'weekly\')"><i class="fas fa-file-pdf"></i> PDF</button></td></tr>'; }
+        for (var i=0;i<allWeeklyReports.length;i++) { var wr=allWeeklyReports[i]; html += '<tr><td>'+formatDate(wr.week_start_date)+' - '+formatDate(wr.week_end_date)+'</td><td><span class="badge badge-success">'+wr.status+'</span></td><td><button class="btn btn-sm btn-outline" onclick="viewWeekly('+wr.id+')">View</button> <button class="btn btn-sm btn-primary" onclick="shareReport('+wr.id+',\'weekly\')"><i class="fas fa-envelope"></i> Share</button> <button class="btn btn-sm btn-primary" onclick="downloadPDF('+wr.id+',\'weekly\')"><i class="fas fa-file-pdf"></i> PDF</button> <button class="btn btn-sm btn-danger" onclick="deleteWeekly('+wr.id+')"><i class="fas fa-trash"></i></button></td></tr>'; }
         html += '</tbody></table>'; }
     html += '</div>'; content.innerHTML = html;
 }
@@ -60,7 +60,7 @@ function loadInsightsTab(content) {
     var html = '<div class="card"><div class="card-header"><h3>Team Insights</h3><button class="btn btn-primary" onclick="showModal(\'insightModal\')"><i class="fas fa-plus"></i> Log Insight</button></div>';
     if (insights.length === 0) html += '<div class="empty-state"><p>No insights</p></div>';
     else { html += '<table><thead><tr><th>Date</th><th>Platform</th><th>Summary</th><th>Link</th><th>Action</th></tr></thead><tbody>';
-        for (var i=0;i<insights.length;i++) { var ins=insights[i]; html += '<tr><td>'+formatDate(ins.date)+'</td><td><span class="badge badge-'+(ins.platform==='WhatsApp'?'success':'info')+'">'+ins.platform+'</span></td><td>'+ins.summary.substring(0,50)+'</td><td>'+(ins.link?'<a href="'+ins.link+'" target="_blank">View</a>':'-')+'</td><td><button class="btn btn-sm btn-danger" onclick="deleteInsight('+i+')">Delete</button></td></tr>'; }
+        for (var i=0;i<insights.length;i++) { var ins=insights[i]; html += '<tr><td>'+formatDate(ins.date)+'</td><td><span class="badge badge-'+(ins.platform==='WhatsApp'?'success':'info')+'">'+ins.platform+'</span></td><td>'+ins.summary.substring(0,50)+'</td><td>'+(ins.link?'<a href="'+ins.link+'" target="_blank">View</a>':'-')+'</td><td><button class="btn btn-sm btn-primary" onclick="shareInsight('+i+')"><i class="fas fa-envelope"></i> Share</button> <button class="btn btn-sm btn-danger" onclick="deleteInsight('+i+')">Delete</button></td></tr>'; }
         html += '</tbody></table>'; }
     html += '</div>'; content.innerHTML = html;
 }
@@ -72,6 +72,41 @@ async function saveInsight(event) { event.preventDefault(); var insight = { date
 async function viewDaily(id) { var r = allDailyReports.find(function(x){return x.id===id;}); if (!r) return; alert('Daily Report - '+formatDate(r.date)+'\n\nNETACAD: '+(r.topics_covered||'N/A')+'\n\nChallenges: '+(r.challenges||'None')+'\n\nRecommendations: '+(r.next_steps||'None')); }
 
 async function viewWeekly(id) { var wr = allWeeklyReports.find(function(x){return x.id===id;}); if (!wr) return; alert('Weekly Report\n'+wr.week_start_date+' to '+wr.week_end_date+'\n\nNETACAD: '+(wr.netacad_update||'N/A')+'\n\nLab: '+(wr.lab_update||'N/A')); }
+
+async function shareReport(id, type) {
+    try {
+        showLoading();
+        var resp = await fetch('/api/reports/' + type + '/' + id + '/share', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        if (!resp.ok) {
+            var err = await resp.json();
+            throw new Error(err.error || 'Failed to share');
+        }
+        var data = await resp.json();
+        hideLoading();
+        if (data.mailto) {
+            window.location.href = data.mailto;
+            showToast('Opening email client...', 'success');
+        } else {
+            showToast('Report shared via email!', 'success');
+        }
+    } catch(e) {
+        hideLoading();
+        showToast('Error: ' + e.message, 'error');
+    }
+}
+
+async function shareInsight(index) {
+    var insights = JSON.parse(localStorage.getItem('teamInsights') || '[]');
+    var ins = insights[index];
+    if (!ins) return;
+    var subject = encodeURIComponent('Team Insight: ' + ins.platform);
+    var body = encodeURIComponent('Date: ' + formatDate(ins.date) + '\n\nSummary:\n' + ins.summary + '\n\nLink: ' + (ins.link || 'N/A'));
+    window.location.href = 'mailto:?subject=' + subject + '&body=' + body;
+    showToast('Opening email client...', 'success');
+}
 
 async function downloadPDF(id, type) {
     try {

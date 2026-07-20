@@ -5,7 +5,7 @@ async function init() {
         students: 'First Name,Second Name,Email,Stream\nJohn,Doe,john@example.com,Love',
         performance: 'First Name,Second Name,Email,Stream,Module Number,Exam Score\nJohn,Doe,john@example.com,Love,1,88',
         laptops: 'TYPE,DEVICE MODEL,SERIALNUMBER,ASSIGNED TO,DESIGNATION,CONDITION,UAF SIGNED,NOTES\nLaptop,Dell Latitude,DL-001,John Doe,Instructor,Good,Yes,No issues',
-        equipment: 'Station,Item,Model,Serial Number,Location,CPU Lockable,Working/ Not working,COMMENT\n1,Monitor,Mecer,VGA001,Computer Lab,Yes,Working,',
+        equipment: 'Station,Item,Model,Serial Number,Location,CPU Lockable,Working/ Not working,COMMENT\n1,Monitor,Mecer,VGA001,Computer Lab,Yes,Working,\n,Keyboard,Logitech,KBD001,Computer Lab,,Working,\n,Mouse,Logitech,MOU001,Computer Lab,,Working,\n,Ncomputing,RX300,NCO001,Computer Lab,,Working,',
         devices: 'DEVICE TYPE,MODEL,SERIAL NUMBER,LOCATION,ASSIGNED TO,CONDITION,NOTES\nProjector,Epson EB-X41,EPS-001,Lab Room A,,Available,'
     };
     for (const [k, v] of Object.entries(defs)) {

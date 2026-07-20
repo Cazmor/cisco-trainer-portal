@@ -46,7 +46,9 @@ async function loadPerformanceTab() {
 }
 
 async function loadAssessments(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();
-    allScores = await API.performance.get();
+    var headers = '<th>Student</th><th>Stream</th>';
+    for (var i=1; i<=14; i++) headers += '<th>M' + i + '</th>';
+    headers += '<th>Avg</th>';
     content.innerHTML = '<div class="card"><div class="card-header"><h3>Module Assessments (Quiz 30% + Practical 30%)</h3></div>' +
         '<div style="margin-bottom:12px;padding:10px;background:#dbeafe;border-radius:8px;font-size:13px"><i class="fas fa-info-circle"></i> Quiz 30% + Practical 30% = 60%. Cisco exam = 40%. Select module and stream to fill all students at once.</div>' +
         '<div class="search-bar"><select id="assessModule" class="form-control" onchange="loadClassSheet()"><option value="">Select Module</option>' +
@@ -54,7 +56,7 @@ async function loadAssessments(content) { allStudents = await API.students.getAl
         '<select id="assessStream" class="form-control" onchange="loadClassSheet()"><option value="">Select Stream</option><option value="Love">Love</option><option value="Joy">Joy</option><option value="Peace">Peace</option><option value="Mnara">Mnara</option></select>' +
         '<button class="btn btn-primary" onclick="saveClassSheet()"><i class="fas fa-save"></i> Save All</button></div>' +
         '<div id="classSheet"><div class="empty-state"><p>Select module and stream to load class sheet</p></div></div>' +
-        '<hr style="margin:20px 0"><h4>Existing Records</h4><div class="table-container"><table><thead><tr><th>Student</th><th>Stream</th><th>Module</th><th>Quiz</th><th>Practical</th><th>Total</th></tr></thead><tbody id="assessTable"></tbody></table></div></div>';
+        '<hr style="margin:20px 0"><h4>Existing Records (Module Totals: Quiz + Practical)</h4><div class="table-container" style="overflow-x:auto; max-width: 100%;"><table><thead><tr>' + headers + '</tr></thead><tbody id="assessTable"></tbody></table></div></div>';
     renderAssessTable();
 }
 
@@ -95,9 +97,35 @@ async function saveClassSheet() {
 function renderAssessTable() {
     var tbody = document.getElementById('assessTable');
     if (!tbody) return;
-    if (allScores.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px">No scores</td></tr>'; return; }
+    var activeStudents = allStudents.filter(function(s) { return s.status === 'active'; });
+    if (activeStudents.length === 0) { tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;padding:20px">No active students</td></tr>'; return; }
+    
+    var scoresByStudent = {};
+    for (var i = 0; i < allScores.length; i++) {
+        var s = allScores[i];
+        if (!scoresByStudent[s.student_id]) scoresByStudent[s.student_id] = {};
+        scoresByStudent[s.student_id][s.module_number] = ((parseFloat(s.quiz_score)||0)*0.3 + (parseFloat(s.practical_score)||0)*0.3).toFixed(1);
+    }
+    
     var html = '';
-    for (var i = 0; i < allScores.length; i++) { var s = allScores[i]; html += '<tr><td>' + s.first_name + ' ' + s.last_name + '</td><td>' + s.stream + '</td><td>M' + s.module_number + '</td><td>' + (s.quiz_score || '-') + '</td><td>' + (s.practical_score || '-') + '</td><td><strong>' + ((parseFloat(s.quiz_score)||0)*0.3 + (parseFloat(s.practical_score)||0)*0.3).toFixed(1) + '%</strong></td></tr>'; }
+    for (var i = 0; i < activeStudents.length; i++) {
+        var st = activeStudents[i];
+        var sScores = scoresByStudent[st.id] || {};
+        html += '<tr><td><strong>' + st.first_name + ' ' + st.last_name + '</strong></td><td>' + st.stream + '</td>';
+        var sum = 0; var count = 0;
+        for (var m = 1; m <= 14; m++) {
+            var val = sScores[m];
+            if (val) {
+                html += '<td>' + val + '</td>';
+                sum += parseFloat(val);
+                count++;
+            } else {
+                html += '<td style="color:#cbd5e1">-</td>';
+            }
+        }
+        var avg = count > 0 ? (sum / count).toFixed(1) : '-';
+        html += '<td><strong>' + avg + '</strong></td></tr>';
+    }
     tbody.innerHTML = html;
 }
 
@@ -114,12 +142,46 @@ async function downloadPerformanceTemplate() {
     }
 }
 
-async function loadCiscoExams(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();
-    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><div><button class="btn btn-outline" onclick="downloadPerformanceTemplate()" style="margin-right:8px"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button></div><input type="file" id="ciscoCsvUpload" accept=".csv,.txt" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">Download the template and upload the Cisco Netacad export file. Students are matched by email.</div><table><thead><tr><th>Student</th><th>Module</th><th>Exam Score</th></tr></thead><tbody id="ciscoTable"></tbody></table></div>';
-    var cisco = allScores.filter(function(s) { return s.exam_score > 0; });
+async function loadCiscoExams(content) { 
+    allStudents = await API.students.getAll(); 
+    allScores = await API.performance.get();
+    var headers = '<th>Student</th><th>Stream</th>';
+    for (var i=1; i<=14; i++) headers += '<th>M' + i + '</th>';
+    headers += '<th>Avg</th>';
+    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><div><button class="btn btn-outline" onclick="downloadPerformanceTemplate()" style="margin-right:8px"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button></div><input type="file" id="ciscoCsvUpload" accept=".csv,.txt" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">Download the template and upload the Cisco Netacad export file. Students are matched by email.</div><div class="table-container" style="overflow-x:auto; max-width: 100%;"><table><thead><tr>' + headers + '</tr></thead><tbody id="ciscoTable"></tbody></table></div></div>';
+    
     var tbody = document.getElementById('ciscoTable');
-    if (cisco.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px">No exam scores</td></tr>'; return; }
-    var html = ''; for (var i = 0; i < cisco.length; i++) { var s = cisco[i]; html += '<tr><td>' + s.first_name + ' ' + s.last_name + '</td><td>M' + s.module_number + '</td><td><strong>' + s.exam_score + '%</strong></td></tr>'; }
+    var activeStudents = allStudents.filter(function(s) { return s.status === 'active'; });
+    if (activeStudents.length === 0) { tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;padding:20px">No active students</td></tr>'; return; }
+    
+    var scoresByStudent = {};
+    for (var i = 0; i < allScores.length; i++) {
+        var s = allScores[i];
+        if (s.exam_score > 0) {
+            if (!scoresByStudent[s.student_id]) scoresByStudent[s.student_id] = {};
+            scoresByStudent[s.student_id][s.module_number] = s.exam_score;
+        }
+    }
+    
+    var html = '';
+    for (var i = 0; i < activeStudents.length; i++) {
+        var st = activeStudents[i];
+        var sScores = scoresByStudent[st.id] || {};
+        html += '<tr><td><strong>' + st.first_name + ' ' + st.last_name + '</strong></td><td>' + st.stream + '</td>';
+        var sum = 0; var count = 0;
+        for (var m = 1; m <= 14; m++) {
+            var val = sScores[m];
+            if (val) {
+                html += '<td>' + val + '%</td>';
+                sum += parseFloat(val);
+                count++;
+            } else {
+                html += '<td style="color:#cbd5e1">-</td>';
+            }
+        }
+        var avg = count > 0 ? (sum / count).toFixed(1) : '-';
+        html += '<td><strong>' + avg + (avg!=='-'?'%':'') + '</strong></td></tr>';
+    }
     tbody.innerHTML = html;
 }
 
@@ -266,7 +328,10 @@ async function handleCiscoCsvUpload(event) {
 }
 
 async function loadCombinedScores(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();
-    content.innerHTML = '<div class="card"><div class="card-header"><h3>Combined Scores (Quiz 30% + Practical 30% + Exam 40%)</h3></div><div class="search-bar"><select id="combinedStreamFilter" class="form-control" onchange="renderCombinedTable()"><option value="">All Streams</option><option value="Love">Love</option><option value="Joy">Joy</option><option value="Peace">Peace</option><option value="Mnara">Mnara</option></select></div><table><thead><tr><th>Student</th><th>Stream</th><th>Module</th><th>Quiz</th><th>Practical</th><th>Exam</th><th>Total</th><th>Grade</th></tr></thead><tbody id="combinedTable"></tbody></table></div>';
+    var headers = '<th>Student</th><th>Stream</th>';
+    for (var i=1; i<=14; i++) headers += '<th>M' + i + '</th>';
+    headers += '<th>Avg</th>';
+    content.innerHTML = '<div class="card"><div class="card-header"><h3>Combined Scores (Quiz 30% + Practical 30% + Exam 40%)</h3></div><div class="search-bar"><select id="combinedStreamFilter" class="form-control" onchange="renderCombinedTable()"><option value="">All Streams</option><option value="Love">Love</option><option value="Joy">Joy</option><option value="Peace">Peace</option><option value="Mnara">Mnara</option></select></div><div class="table-container" style="overflow-x:auto; max-width: 100%;"><table><thead><tr>' + headers + '</tr></thead><tbody id="combinedTable"></tbody></table></div></div>';
     renderCombinedTable();
 }
 
@@ -355,11 +420,42 @@ function renderCiscoTable() {
 
 function renderCombinedTable() {
     var filter = document.getElementById('combinedStreamFilter') ? document.getElementById('combinedStreamFilter').value : '';
-    var filtered = filter ? allScores.filter(function(s) { return s.stream === filter; }) : allScores;
     var tbody = document.getElementById('combinedTable');
     if (!tbody) return;
-    if (filtered.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px">No scores</td></tr>'; return; }
+    var activeStudents = allStudents.filter(function(s) { return s.status === 'active'; });
+    if (filter) activeStudents = activeStudents.filter(function(s) { return s.stream === filter; });
+    if (activeStudents.length === 0) { tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;padding:20px">No students</td></tr>'; return; }
+    
+    var scoresByStudent = {};
+    for (var i = 0; i < allScores.length; i++) {
+        var s = allScores[i];
+        if (!scoresByStudent[s.student_id]) scoresByStudent[s.student_id] = {};
+        
+        var q = parseFloat(s.quiz_score) || 0;
+        var p = parseFloat(s.practical_score) || 0;
+        var e = parseFloat(s.exam_score) || 0;
+        var total = (q * 0.3) + (p * 0.3) + (e * 0.4);
+        scoresByStudent[s.student_id][s.module_number] = total;
+    }
+    
     var html = '';
-    for (var i=0;i<filtered.length;i++) { var s=filtered[i]; html+='<tr><td>'+s.first_name+' '+s.last_name+'</td><td>'+s.stream+'</td><td>Module '+s.module_number+'</td><td>'+(s.quiz_score||'-')+'</td><td>'+(s.practical_score||'-')+'</td><td>'+(s.exam_score||'-')+'</td><td><strong>'+(s.total_score?parseFloat(s.total_score).toFixed(1):'-')+'%</strong></td><td><span style="font-weight:700">'+(s.grade||'-')+'</span></td></tr>'; }
+    for (var i = 0; i < activeStudents.length; i++) {
+        var st = activeStudents[i];
+        var sScores = scoresByStudent[st.id] || {};
+        html += '<tr><td><strong>' + st.first_name + ' ' + st.last_name + '</strong></td><td>' + st.stream + '</td>';
+        var sum = 0; var count = 0;
+        for (var m = 1; m <= 14; m++) {
+            var val = sScores[m];
+            if (val !== undefined) {
+                html += '<td>' + val.toFixed(1) + '%</td>';
+                sum += val;
+                count++;
+            } else {
+                html += '<td style="color:#cbd5e1">-</td>';
+            }
+        }
+        var avg = count > 0 ? (sum / count).toFixed(1) : '-';
+        html += '<td><strong>' + avg + (avg!=='-'?'%':'') + '</strong></td></tr>';
+    }
     tbody.innerHTML = html;
 }

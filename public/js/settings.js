@@ -47,6 +47,7 @@ async function updateProfile(event) { event.preventDefault(); var data = { name:
 async function loadNotificationsTab(content) {
     var prefs = await API.settings.getNotifications();
     content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-bell"></i> Notification Preferences</h3>' +
+        '<div class="form-group" style="margin-bottom: 24px; max-width: 300px;"><label>Daily Report Reminder Time</label><input type="time" id="reminderTime" class="form-control" value="'+(prefs.reminder_time||'17:00')+'" onchange="saveNotifPrefs()"><small style="color:var(--text-secondary)">Time when AI report reminders will be sent</small></div>' +
         '<div class="toggle-switch"><div><div class="toggle-label">Email reminders for scheduled classes</div><div class="toggle-description">Get notified before your scheduled classes</div></div><label class="toggle-input"><input type="checkbox" id="notifEmail" '+(prefs.email_reminders?'checked':'')+' onchange="saveNotifPrefs()"><span class="toggle-slider"></span></label></div>' +
         '<div class="toggle-switch"><div><div class="toggle-label">Weekly report reminders (Saturday)</div><div class="toggle-description">Reminder to submit weekly reports</div></div><label class="toggle-input"><input type="checkbox" id="notifWeekly" '+(prefs.weekly_report_reminder?'checked':'')+' onchange="saveNotifPrefs()"><span class="toggle-slider"></span></label></div>' +
         '<div class="toggle-switch"><div><div class="toggle-label">Maintenance alerts</div><div class="toggle-description">Get notified about lab maintenance issues</div></div><label class="toggle-input"><input type="checkbox" id="notifMaint" '+(prefs.maintenance_alerts?'checked':'')+' onchange="saveNotifPrefs()"><span class="toggle-slider"></span></label></div>' +
@@ -55,21 +56,34 @@ async function loadNotificationsTab(content) {
         '</div>';
 }
 
-async function saveNotifPrefs() { var data = { email_reminders: document.getElementById('notifEmail').checked, weekly_report_reminder: document.getElementById('notifWeekly').checked, maintenance_alerts: document.getElementById('notifMaint').checked, uaf_expiry_reminders: document.getElementById('notifUAF').checked, student_at_risk_alerts: document.getElementById('notifRisk').checked }; try { await API.settings.updateNotifications(data); showToast('Preferences saved','success'); } catch(e) { showToast('Error: '+e.message,'error'); } }
+async function saveNotifPrefs() { var data = { email_reminders: document.getElementById('notifEmail').checked, weekly_report_reminder: document.getElementById('notifWeekly').checked, maintenance_alerts: document.getElementById('notifMaint').checked, uaf_expiry_reminders: document.getElementById('notifUAF').checked, student_at_risk_alerts: document.getElementById('notifRisk').checked, reminder_time: document.getElementById('reminderTime').value }; try { await API.settings.updateNotifications(data); showToast('Preferences saved','success'); } catch(e) { showToast('Error: '+e.message,'error'); } }
 
-function loadEmailsTab(content) {
-    var saved = JSON.parse(localStorage.getItem('emailSettings') || '{"admin":"","it":"","coordinator":""}');
+async function loadEmailsTab(content) {
+    var prefs = await API.settings.getNotifications();
+    var saved = { admin: '', it: '', coordinator: '' };
+    try { if (prefs.report_emails) saved = JSON.parse(prefs.report_emails); } catch(e) {}
+
     content.innerHTML = '<div class="settings-section"><h3><i class="fas fa-envelope"></i> Email Recipients</h3>' +
         '<p style="color:var(--text-secondary);margin-bottom:20px">Configure who receives system alerts, reports, and notifications.</p>' +
         '<form onsubmit="saveEmailSettings(event)">' +
-            '<div class="form-group"><label>Admin Email (Primary) *</label><input type="email" id="emailAdmin" class="form-control" value="'+saved.admin+'" required placeholder="admin@example.com"><small style="color:var(--text-secondary)">Receives all system alerts and reports</small></div>' +
-            '<div class="form-group"><label>IT Support Email</label><input type="email" id="emailIT" class="form-control" value="'+saved.it+'" placeholder="it@example.com"><small style="color:var(--text-secondary)">Receives maintenance and emergency alerts</small></div>' +
-            '<div class="form-group"><label>Academy Coordinator Email</label><input type="email" id="emailCoord" class="form-control" value="'+saved.coordinator+'" placeholder="coordinator@example.com"><small style="color:var(--text-secondary)">Receives weekly reports and summaries</small></div>' +
+            '<div class="form-group"><label>Admin Email (Primary) *</label><input type="email" id="emailAdmin" class="form-control" value="'+(saved.admin||'')+'" required placeholder="admin@example.com"><small style="color:var(--text-secondary)">Receives all system alerts and reports</small></div>' +
+            '<div class="form-group"><label>IT Support Email</label><input type="email" id="emailIT" class="form-control" value="'+(saved.it||'')+'" placeholder="it@example.com"><small style="color:var(--text-secondary)">Receives maintenance and emergency alerts</small></div>' +
+            '<div class="form-group"><label>Academy Coordinator Email</label><input type="email" id="emailCoord" class="form-control" value="'+(saved.coordinator||'')+'" placeholder="coordinator@example.com"><small style="color:var(--text-secondary)">Receives weekly reports and summaries</small></div>' +
             '<button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Email Settings</button>' +
         '</form></div>';
 }
 
-function saveEmailSettings(event) { event.preventDefault(); var data = { admin: document.getElementById('emailAdmin').value, it: document.getElementById('emailIT').value, coordinator: document.getElementById('emailCoord').value }; localStorage.setItem('emailSettings', JSON.stringify(data)); showToast('Email settings saved!','success'); }
+async function saveEmailSettings(event) { 
+    event.preventDefault(); 
+    var data = { admin: document.getElementById('emailAdmin').value, it: document.getElementById('emailIT').value, coordinator: document.getElementById('emailCoord').value }; 
+    var payload = { report_emails: JSON.stringify(data) };
+    try {
+        await API.settings.updateNotifications(payload);
+        showToast('Email settings saved to database!','success'); 
+    } catch (e) {
+        showToast('Error saving emails: ' + e.message, 'error');
+    }
+}
 
 async function loadSystemTab(content) {
     var sys = await API.settings.getSystem();

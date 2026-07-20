@@ -86,16 +86,69 @@ function quickReport(deviceType, deviceId, stationNum) {
 
 function showWS(stNum) {
     var items = allEquipment.filter(function(e){return (e.location||'').indexOf('Station '+stNum) >= 0;});
-    if (items.length===0) { showToast('No equipment found','warning'); return; }
-    var working = items.filter(function(e){return e.status==='available'||e.status==='in-use';}).length;
-    document.getElementById('wsTitle').textContent = 'Workstation '+stNum+' ('+working+'/'+items.length+' working)';
-    var body = '<div class="grid-2" style="gap:12px">';
-    for (var i=0;i<items.length;i++) {
-        var e = items[i]; var isOK = e.status==='available'||e.status==='in-use';
-        var icon = e.equipment_type.toLowerCase().includes('monitor')?'tv':e.equipment_type.toLowerCase().includes('keyboard')?'keyboard':e.equipment_type.toLowerCase().includes('mouse')?'mouse':'desktop';
-        body += '<div style="padding:16px;background:var(--bg-secondary);border-radius:12px;text-align:center;cursor:pointer" onclick="quickReport(\''+e.equipment_type+'\','+e.id+',\''+stNum+'\')"><i class="fas fa-'+icon+'" style="font-size:28px;color:'+(isOK?'#10b981':'#ef4444')+'"></i><h4 style="margin-top:8px">'+e.equipment_type+'</h4><p style="font-size:11px">'+e.model+'</p><p style="font-size:10px"><code>'+e.serial_number+'</code></p><span class="badge badge-'+(isOK?'success':'danger')+'">'+(isOK?'Working':'Needs Repair')+'</span></div>';
+    
+    // Define expected slots
+    var expectedSlots = [
+        { type: 'Monitor', icon: 'tv', match: ['monitor'] },
+        { type: 'Keyboard', icon: 'keyboard', match: ['keyboard'] },
+        { type: 'Mouse', icon: 'mouse', match: ['mouse'] },
+        { type: 'Ncomputing', icon: 'desktop', match: ['ncomputing', 'n-computing'] }
+    ];
+
+    var workingCount = 0;
+    var totalCount = 4; // Always 4 slots
+
+    var slotsHtml = '';
+    for (var i = 0; i < expectedSlots.length; i++) {
+        var slot = expectedSlots[i];
+        // Find if we have an item matching this slot
+        var foundItem = items.find(function(e) {
+            var et = e.equipment_type.toLowerCase();
+            return slot.match.some(function(m) { return et.includes(m); });
+        });
+
+        if (foundItem) {
+            var isOK = foundItem.status === 'available' || foundItem.status === 'in-use';
+            if (isOK) workingCount++;
+            
+            slotsHtml += '<div style="padding:16px;background:var(--bg-secondary);border-radius:12px;text-align:center;cursor:pointer" onclick="quickReport(\''+foundItem.equipment_type+'\','+foundItem.id+',\''+stNum+'\')">' +
+                '<i class="fas fa-'+slot.icon+'" style="font-size:28px;color:'+(isOK?'#10b981':'#ef4444')+'"></i>' +
+                '<h4 style="margin-top:8px">'+foundItem.equipment_type+'</h4>' +
+                '<p style="font-size:11px">'+(foundItem.model||'-')+'</p>' +
+                '<p style="font-size:10px"><code>'+(foundItem.serial_number||'-')+'</code></p>' +
+                '<span class="badge badge-'+(isOK?'success':'danger')+'">'+(isOK?'Working':'Needs Repair')+'</span></div>';
+        } else {
+            // Missing slot
+            slotsHtml += '<div style="padding:16px;background:var(--bg-secondary);border-radius:12px;text-align:center;opacity:0.6">' +
+                '<i class="fas fa-'+slot.icon+'" style="font-size:28px;color:#9ca3af"></i>' +
+                '<h4 style="margin-top:8px;color:#9ca3af">'+slot.type+'</h4>' +
+                '<p style="font-size:11px;color:#9ca3af">Not Found</p>' +
+                '<p style="font-size:10px"><code>-</code></p>' +
+                '<span class="badge" style="background:#f3f4f6;color:#6b7280">Missing</span></div>';
+        }
     }
-    body += '</div>'; document.getElementById('wsBody').innerHTML = body; showModal('wsModal');
+
+    // Add any extra items that didn't match the standard 4
+    for (var j = 0; j < items.length; j++) {
+        var e = items[j];
+        var et = e.equipment_type.toLowerCase();
+        var isStandard = expectedSlots.some(function(s) { return s.match.some(function(m) { return et.includes(m); }); });
+        if (!isStandard) {
+            totalCount++;
+            var isOK = e.status === 'available' || e.status === 'in-use';
+            if (isOK) workingCount++;
+            slotsHtml += '<div style="padding:16px;background:var(--bg-secondary);border-radius:12px;text-align:center;cursor:pointer" onclick="quickReport(\''+e.equipment_type+'\','+e.id+',\''+stNum+'\')">' +
+                '<i class="fas fa-microchip" style="font-size:28px;color:'+(isOK?'#10b981':'#ef4444')+'"></i>' +
+                '<h4 style="margin-top:8px">'+e.equipment_type+'</h4>' +
+                '<p style="font-size:11px">'+(e.model||'-')+'</p>' +
+                '<p style="font-size:10px"><code>'+(e.serial_number||'-')+'</code></p>' +
+                '<span class="badge badge-'+(isOK?'success':'danger')+'">'+(isOK?'Working':'Needs Repair')+'</span></div>';
+        }
+    }
+
+    document.getElementById('wsTitle').textContent = 'Workstation '+stNum+' ('+workingCount+'/'+totalCount+' Working)';
+    document.getElementById('wsBody').innerHTML = '<div class="grid-2" style="gap:12px">' + slotsHtml + '</div>';
+    showModal('wsModal');
 }
 
 function loadInventory(c) {

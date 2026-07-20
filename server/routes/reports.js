@@ -257,4 +257,49 @@ router.delete('/daily/:id', async (req, res) => { try { await query('DELETE FROM
 router.delete('/weekly/:id', async (req, res) => { try { await query('DELETE FROM weekly_reports WHERE id = $1', [req.params.id]); res.json({ message: 'Deleted' }); } catch (error) { res.status(500).json({ error: error.message }); } });
 router.delete('/maintenance/:id', async (req, res) => { try { await query('DELETE FROM maintenance_reports WHERE id = $1', [req.params.id]); res.json({ message: 'Deleted' }); } catch (error) { res.status(500).json({ error: error.message }); } });
 
+router.post('/:type/:id/share', async (req, res) => {
+    try {
+        const { type, id } = req.params;
+        let reportDetails = '';
+        
+        if (type === 'daily') {
+            const result = await query("SELECT * FROM daily_reports WHERE id = $1", [id]);
+            if (result.rows.length > 0) {
+                const r = result.rows[0];
+                reportDetails = `Daily Report (${r.date})\n\nNETACAD: ${r.topics_covered || 'N/A'}\nChallenges: ${r.challenges || 'N/A'}\nRecommendations: ${r.next_steps || 'N/A'}`;
+            }
+        } else if (type === 'weekly') {
+            const result = await query("SELECT * FROM weekly_reports WHERE id = $1", [id]);
+            if (result.rows.length > 0) {
+                const r = result.rows[0];
+                reportDetails = `Weekly Report (${r.week_start_date} to ${r.week_end_date})\n\nNETACAD: ${r.netacad_update || 'N/A'}\nLab: ${r.lab_update || 'N/A'}`;
+            }
+        } else if (type === 'maintenance') {
+            const result = await query("SELECT * FROM maintenance_reports WHERE id = $1", [id]);
+            if (result.rows.length > 0) {
+                const r = result.rows[0];
+                reportDetails = `Maintenance Report (${r.report_date})\n\nOpen Issues: ${r.open_issues_count}\nIn Progress: ${r.in_progress_count}\nResolved: ${r.resolved_count}`;
+            }
+        }
+        
+        if (!reportDetails) return res.status(404).json({ error: 'Report not found' });
+        
+        const prefs = await query("SELECT report_emails FROM notification_preferences WHERE user_id = $1", [req.user.id]);
+        let emails = [];
+        if (prefs.rows.length > 0 && prefs.rows[0].report_emails) {
+            try {
+                const parsed = JSON.parse(prefs.rows[0].report_emails);
+                if (parsed.admin) emails.push(parsed.admin);
+                if (parsed.it) emails.push(parsed.it);
+                if (parsed.coordinator) emails.push(parsed.coordinator);
+            } catch(e) {}
+        }
+        const to = emails.join(',');
+        const subject = encodeURIComponent('Cisco Trainer Portal - ' + type.charAt(0).toUpperCase() + type.slice(1) + ' Report');
+        const body = encodeURIComponent(reportDetails + '\n\nSent from Cisco Trainer Portal.');
+        
+        res.json({ message: 'Ready to share', mailto: `mailto:${to}?subject=${subject}&body=${body}` });
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 module.exports = router;

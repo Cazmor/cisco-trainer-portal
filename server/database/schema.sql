@@ -415,6 +415,8 @@ CREATE TABLE notification_preferences (
     maintenance_alerts BOOLEAN DEFAULT TRUE,
     uaf_expiry_reminders BOOLEAN DEFAULT TRUE,
     student_at_risk_alerts BOOLEAN DEFAULT TRUE,
+    report_emails TEXT,
+    reminder_time VARCHAR(10) DEFAULT '17:00',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
