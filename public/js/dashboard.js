@@ -95,14 +95,14 @@ function updateStatsGrid(students, attendance, labStatus, laptops, equipment, pe
     var uafCompliance = laptops.length > 0 ? Math.round((activeLaptops / laptops.length) * 100) : 100;
     
     grid.innerHTML = 
-        '<div class="stat-card"><div class="stat-icon" style="background:#dbeafe"><i class="fas fa-user-graduate" style="color:#3b82f6"></i></div><div class="stat-info"><h3>' + students.length + '</h3><p>Total Students</p><small>' + activeStudents.length + ' active | Streams: ' + getStreamSummary(students) + '</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#ede9fe"><i class="fas fa-laptop" style="color:#8b5cf6"></i></div><div class="stat-info"><h3>' + totalDevices + '</h3><p>Total Devices</p><small>Laptops: ' + laptops.length + ' | Workstations: ' + totalWorkstations + '</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#d1fae5"><i class="fas fa-calendar-check" style="color:#10b981"></i></div><div class="stat-info"><h3>' + monthAttendanceRate + '%</h3><p>Avg Attendance</p><small>30-day average</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#fef3c7"><i class="fas fa-chart-line" style="color:#f59e0b"></i></div><div class="stat-info"><h3>' + avgPerf + '%</h3><p>Avg Performance</p><small>All modules</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#fce7f3"><i class="fas fa-server" style="color:#ec4899"></i></div><div class="stat-info"><h3>' + labUptime + '%</h3><p>Lab Uptime</p><small>' + functionalWS + '/' + totalWorkstations + ' functional</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#d1fae5"><i class="fas fa-book" style="color:#059669"></i></div><div class="stat-info"><h3>' + moduleCoverage + '%</h3><p>Module Coverage</p><small>' + completedModules + '/' + totalModules + ' completed</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#e0e7ff"><i class="fas fa-heartbeat" style="color:#6366f1"></i></div><div class="stat-info"><h3>' + systemHealth + '%</h3><p>System Health</p><small>Overall score</small></div></div>' +
-        '<div class="stat-card"><div class="stat-icon" style="background:#ccfbf1"><i class="fas fa-shield-alt" style="color:#0d9488"></i></div><div class="stat-info"><h3>' + uafCompliance + '%</h3><p>UAF Compliance</p><small>Laptops active</small></div></div>';
+        '<div class="stat-card"><div class="stat-icon icon-bg-blue"><i class="fas fa-user-graduate"></i></div><div class="stat-info"><h3>' + students.length + '</h3><p>Total Students</p><small>' + activeStudents.length + ' active | Streams: ' + getStreamSummary(students) + '</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-purple"><i class="fas fa-laptop"></i></div><div class="stat-info"><h3>' + totalDevices + '</h3><p>Total Devices</p><small>Laptops: ' + laptops.length + ' | Workstations: ' + totalWorkstations + '</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-green"><i class="fas fa-calendar-check"></i></div><div class="stat-info"><h3>' + monthAttendanceRate + '%</h3><p>Avg Attendance</p><small>30-day average</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-yellow"><i class="fas fa-chart-line"></i></div><div class="stat-info"><h3>' + avgPerf + '%</h3><p>Avg Performance</p><small>All modules</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-pink"><i class="fas fa-server"></i></div><div class="stat-info"><h3>' + labUptime + '%</h3><p>Lab Uptime</p><small>' + functionalWS + '/' + totalWorkstations + ' functional</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-green"><i class="fas fa-book"></i></div><div class="stat-info"><h3>' + moduleCoverage + '%</h3><p>Module Coverage</p><small>' + completedModules + '/' + totalModules + ' completed</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-purple"><i class="fas fa-heartbeat"></i></div><div class="stat-info"><h3>' + systemHealth + '%</h3><p>System Health</p><small>Overall score</small></div></div>' +
+        '<div class="stat-card"><div class="stat-icon icon-bg-teal"><i class="fas fa-shield-alt"></i></div><div class="stat-info"><h3>' + uafCompliance + '%</h3><p>UAF Compliance</p><small>Laptops active</small></div></div>';
 }
 
 function getStreamSummary(students) {

@@ -110,7 +110,7 @@ async function loadCPDTab(content) {
     var totalHours = entries.reduce(function(s,e){return s+(parseFloat(e.hours_completed)||0);},0);
     
     var html = '<div class="settings-section"><h3><i class="fas fa-certificate"></i> Professional Development Log (KPI 6)</h3>' +
-        '<div class="grid-2" style="margin-bottom:20px"><div class="stat-card"><div class="stat-icon" style="background:#ede9fe"><i class="fas fa-certificate" style="color:#8b5cf6"></i></div><div class="stat-info"><h3>'+coursesCompleted+'</h3><p>Courses Completed</p></div></div><div class="stat-card"><div class="stat-icon" style="background:#dbeafe"><i class="fas fa-clock" style="color:#3b82f6"></i></div><div class="stat-info"><h3>'+totalHours+'</h3><p>Hours Logged</p></div></div></div>' +
+        '<div class="grid-2" style="margin-bottom:20px"><div class="stat-card"><div class="stat-icon icon-bg-purple"><i class="fas fa-certificate"></i></div><div class="stat-info"><h3>'+coursesCompleted+'</h3><p>Courses Completed</p></div></div><div class="stat-card"><div class="stat-icon icon-bg-blue"><i class="fas fa-clock"></i></div><div class="stat-info"><h3>'+totalHours+'</h3><p>Hours Logged</p></div></div></div>' +
         '<button class="btn btn-primary" onclick="showModal(\'cpdModal\')" style="margin-bottom:16px"><i class="fas fa-plus"></i> Add CPD Entry</button>';
     
     if (entries.length === 0) html += '<div class="empty-state"><p>No CPD entries yet. Start logging your professional development.</p></div>';
@@ -251,7 +251,7 @@ function loadDataTab(content) {
             '<div class="data-card"><i class="fas fa-download" style="color:#3b82f6"></i><h4>Export All Data</h4><p>Download complete system data</p><button class="btn btn-primary btn-sm" onclick="exportData()">Export</button></div>' +
             '<div class="data-card"><i class="fas fa-upload" style="color:#10b981"></i><h4>Import Data</h4><p>Restore from backup file</p><input type="file" id="importUpload" accept=".csv" style="display:none" onchange="handleImportUpload(event)"><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'importUpload\').click()">Import</button></div>' +
             '<div class="data-card"><i class="fas fa-cloud-download-alt" style="color:#8b5cf6"></i><h4>Download Backup</h4><p>Full system backup</p><button class="btn btn-outline btn-sm" onclick="exportData()">Backup</button></div>' +
-            '<div class="data-card" style="border-color:#ef4444;background:linear-gradient(135deg, rgba(254,242,242,0.9), rgba(254,242,242,0.6))"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i><h4 style="color:#ef4444">Reset System</h4><p>Clear all data</p><button class="btn btn-danger btn-sm" onclick="resetSystem()">Reset</button></div>' +
+            '<div class="data-card" style="border-color:#ef4444;background:rgba(239,68,68,0.05)"><i class="fas fa-exclamation-triangle" style="color:#ef4444"></i><h4 style="color:#ef4444">Reset System</h4><p>Clear all data</p><button class="btn btn-danger btn-sm" onclick="resetSystem()">Reset</button></div>' +
         '</div></div>';
 }
 

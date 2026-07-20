@@ -207,7 +207,7 @@ function showScoringModal(kpiId) {
     for (var i = 0; i < def.subObjectives.length; i++) {
         var sub = def.subObjectives[i];
         html += '<tr><td>'+(i+1)+'</td><td><strong>'+sub.name+'</strong><br><small>'+sub.scale.join(' | ')+'</small>' + (sub.note ? '<br><small style="color:#f59e0b"><i class="fas fa-clock"></i> '+sub.note+'</small>' : '') + '</td>';
-        for (var r = 1; r <= 5; r++) html += '<td style="text-align:center"><input type="radio" disabled name="sub_'+i+'" value="'+r+'" '+(scores.length>i&&scores[i]===r?'checked':'')+'></td>';
+        for (var r = 1; r <= 5; r++) html += '<td style="text-align:center"><input type="radio" onclick="return false;" name="sub_'+i+'" value="'+r+'" '+(scores.length>i&&scores[i]===r?'checked':'')+'></td>';
         html += '<td><button class="btn btn-sm btn-outline" onclick="viewSubEvidence(\''+sub.evidence+'\')"><i class="fas fa-eye"></i></button></td>';
         html += '</tr>';
     }
