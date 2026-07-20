@@ -57,7 +57,7 @@ function filterStudents() { fetchStudents(); }
 async function handleCSVUpload(event) {
     var file = event.target.files[0];
     if (!file) return;
-    if (!confirm('Import students from ' + file.name + '?\n\nMake sure your CSV has columns: first_name,last_name,email,phone,stream,emergency_contact')) { event.target.value = ''; return; }
+    if (!confirm('Import students from ' + file.name + '?\n\nMake sure your CSV has these columns:\nFirst Name, Second Name, Email, Stream')) { event.target.value = ''; return; }
     try {
         showLoading();
         var formData = new FormData();

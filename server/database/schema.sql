@@ -376,7 +376,9 @@ CREATE TABLE survey_questions (
     id SERIAL PRIMARY KEY,
     survey_id INTEGER REFERENCES surveys(id) ON DELETE CASCADE,
     question_text TEXT NOT NULL,
-    question_order INTEGER NOT NULL
+    question_order INTEGER NOT NULL,
+    question_type VARCHAR(50) DEFAULT 'rating',
+    options JSONB
 );
 
 -- Survey responses table

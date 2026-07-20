@@ -10,6 +10,7 @@ var currentStation = '1';
 var selectedLaptops = [];
 var selectedEquip = [];
 var selectedDevices = [];
+var allStudents = [];
 
 async function loadLabPage() {
     var c = document.getElementById('contentArea');
@@ -19,7 +20,21 @@ async function loadLabPage() {
 }
 
 async function loadLabData() {
-    try { showLoading(); var s = await API.lab.getStatus(); allWorkstations = s.workstations || []; allLaptops = await API.lab.getLaptops(); allEquipment = await API.lab.getEquipment(); allDevices = await API.lab.getOtherDevices(); maintenanceLogs = await API.lab.getMaintenance(); preventiveTasks = await API.lab.getPreventive(); hideLoading(); await loadLabTab(); } catch (e) { hideLoading(); }
+    try { 
+        showLoading(); 
+        var s = await API.lab.getStatus(); 
+        allWorkstations = s.workstations || []; 
+        allLaptops = await API.lab.getLaptops(); 
+        allEquipment = await API.lab.getEquipment(); 
+        allDevices = await API.lab.getOtherDevices(); 
+        maintenanceLogs = await API.lab.getMaintenance(); 
+        preventiveTasks = await API.lab.getPreventive(); 
+        allStudents = await API.students.getAll();
+        hideLoading(); 
+        await loadLabTab(); 
+    } catch (e) { 
+        hideLoading(); 
+    }
 }
 
 async function switchLabTab(tab) { currentLabTab = tab; var tabs = document.querySelectorAll('.performance-tab'); for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active'); event.target.classList.add('active'); await loadLabTab(); }
@@ -102,7 +117,7 @@ function switchInv(tab) {
         }
     }
 
-    var html = '<div style="margin-bottom:12px;display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="dlTpl(\''+tab+'\')"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'csv_'+tab+'\').click()"><i class="fas fa-upload"></i> Upload CSV</button><input type="file" id="csv_'+tab+'" accept=".csv" style="display:none" onchange="upCSV(event,\''+tab+'\')"></div>';
+    var html = '<div style="margin-bottom:12px;display:flex;gap:8px"><button class="btn btn-outline btn-sm" onclick="dlTpl(\''+tab+'\')"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline btn-sm" onclick="document.getElementById(\'csv_'+tab+'\').click()"><i class="fas fa-upload"></i> Upload CSV</button><input type="file" id="csv_'+tab+'" accept=".csv,.txt" style="display:none" onchange="upCSV(event,\''+tab+'\')"></div>';
     if (tab==='laptops') {
         html += '<div style="overflow-x:auto"><table><thead><tr><th><input type="checkbox" id="selAllLap" onchange="toggleAllLap()"></th><th>Item</th><th>Model</th><th>Serial</th><th>Assigned</th><th>Condition</th><th>UAF</th><th>Actions</th></tr></thead><tbody>';
         for (var i=0;i<allLaptops.length;i++) { var l=allLaptops[i]; html+='<tr><td><input type="checkbox" class="lap-check" value="'+l.id+'" onchange="updateLapSel()"></td><td>'+(i+1)+'</td><td>'+l.brand+' '+l.model+'</td><td><code>'+l.serial_number+'</code></td><td>'+(l.first_name?l.first_name+' '+l.last_name:'-')+'</td><td><span class="badge badge-'+(l.status==='available'?'success':'warning')+'">'+l.status+'</span></td><td>'+(l.uaf_document_url?'Yes':'No')+'</td><td><button class="btn btn-sm btn-outline" onclick="editLaptop('+l.id+')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="delLaptop('+l.id+')"><i class="fas fa-trash"></i></button></td></tr>'; }
@@ -150,74 +165,205 @@ async function upCSV(event, type) {
     try {
         showLoading();
         var text = await file.text();
-        var lines = text.split('\n');
-        if (lines.length < 2) throw new Error('File is empty or missing data');
+        // Normalize line endings and strip BOM
+        text = text.replace(/\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        var lines = text.split('\n').filter(function(l) { return l.trim() !== ''; });
+        if (lines.length < 2) throw new Error('File is empty or missing data rows');
         
-        var headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        var count = 0;
-        var currentStation = '1'; 
+        // Detect delimiter (tab vs comma)
+        var delimiter = lines[0].indexOf('\t') > -1 ? '\t' : ',';
+        
+        var rawHeaders = parseCsvLine(lines[0], delimiter);
+        var headersNormalized = rawHeaders.map(function(h) {
+            return h.toLowerCase().replace(/[^a-z0-9]/g, '');
+        });
 
-        var idxModel = headers.findIndex(h => h.includes('model'));
-        var idxSerial = headers.findIndex(h => h.includes('serial'));
-        var idxItem = headers.findIndex(h => h.includes('item') || h.includes('type'));
-        var idxLoc = headers.findIndex(h => h.includes('location'));
-        var idxCond = headers.findIndex(h => h.includes('condition') || h.includes('working'));
-        var idxStation = headers.findIndex(h => h.includes('station'));
-        var idxNotes = headers.findIndex(h => h.includes('note') || h.includes('comment'));
+        // Helper to find column index by name (loose matching)
+        function findColIndex(searchTerms) {
+            for (var idx = 0; idx < searchTerms.length; idx++) {
+                var term = searchTerms[idx].toLowerCase().replace(/[^a-z0-9]/g, '');
+                var foundIdx = headersNormalized.indexOf(term);
+                if (foundIdx > -1) return foundIdx;
+            }
+            // Partial matching fallback
+            for (var idx = 0; idx < searchTerms.length; idx++) {
+                var term = searchTerms[idx].toLowerCase().replace(/[^a-z0-9]/g, '');
+                for (var j = 0; j < headersNormalized.length; j++) {
+                    if (headersNormalized[j].indexOf(term) > -1 || term.indexOf(headersNormalized[j]) > -1) {
+                        return j;
+                    }
+                }
+            }
+            return -1;
+        }
+
+        // Helpers to match student by name
+        function findStudentIdByName(nameStr) {
+            if (!nameStr) return null;
+            var nameClean = nameStr.trim().toLowerCase();
+            for (var j = 0; j < allStudents.length; j++) {
+                var fullName = (allStudents[j].first_name + ' ' + allStudents[j].last_name).toLowerCase();
+                if (fullName === nameClean || fullName.indexOf(nameClean) > -1 || nameClean.indexOf(fullName) > -1) {
+                    return allStudents[j].id;
+                }
+            }
+            return null;
+        }
+
+        var count = 0;
+        var currentStation = '1';
 
         for (var i = 1; i < lines.length; i++) {
-            var p = lines[i].split(',');
-            if (p.length < 2) continue; 
-            
+            var p = parseCsvLine(lines[i], delimiter);
+            if (p.length === 0 || (p.length === 1 && p[0] === '')) continue;
+
             if (type === 'laptops') {
-                var model = idxModel >= 0 ? p[idxModel].trim() : (p[1]||'').trim();
-                var serial = idxSerial >= 0 ? p[idxSerial].trim() : (p[2]||'').trim();
+                // TYPE, DEVICE MODEL, SERIALNUMBER, ASSIGNED TO, DESIGNATION, CONDITION, UAF SIGNED, NOTES
+                var idxType = findColIndex(['type', 'item']);
+                var idxModel = findColIndex(['devicemodel', 'model']);
+                var idxSerial = findColIndex(['serialnumber', 'serial']);
+                var idxAssigned = findColIndex(['assignedto', 'assigned']);
+                var idxDesignation = findColIndex(['designation']);
+                var idxCondition = findColIndex(['condition']);
+                var idxUaf = findColIndex(['uafsigned']);
+                var idxNotes = findColIndex(['notes', 'comment']);
+
+                var lapType = idxType >= 0 ? p[idxType] : 'Laptop';
+                var model = idxModel >= 0 ? p[idxModel] : '';
+                var serial = idxSerial >= 0 ? p[idxSerial] : '';
+                var assignedStr = idxAssigned >= 0 ? p[idxAssigned] : '';
+                var designation = idxDesignation >= 0 ? p[idxDesignation] : '';
+                var condition = idxCondition >= 0 ? p[idxCondition] : '';
+                var uaf = idxUaf >= 0 ? p[idxUaf] : '';
+                var notes = idxNotes >= 0 ? p[idxNotes] : '';
+
                 if (!serial) serial = 'SN-' + Date.now() + '-' + i;
+                if (!model) continue;
+
+                var studentId = findStudentIdByName(assignedStr);
+                
+                // Determine status based on condition / assigned_to
+                var status = 'available';
+                var condLower = condition.toLowerCase();
+                if (condLower.includes('maint') || condLower.includes('repair') || condLower.includes('bad') || condLower.includes('down')) {
+                    status = 'maintenance';
+                } else if (studentId) {
+                    status = 'assigned';
+                }
+
+                // Construct notes combining Designation, UAF and comments
+                var combinedNotes = notes;
+                if (designation) combinedNotes += (combinedNotes ? ' | ' : '') + 'Designation: ' + designation;
+                if (uaf) combinedNotes += (combinedNotes ? ' | ' : '') + 'UAF Signed: ' + uaf;
+
                 await API.lab.addLaptop({
-                    brand: 'Laptop',
+                    brand: lapType || 'Laptop',
                     model: model,
                     serial_number: serial,
-                    status: 'available'
+                    status: status,
+                    assigned_to: studentId,
+                    notes: combinedNotes
                 });
                 count++;
-            } else if (type === 'equipment') {
-                var st = idxStation >= 0 ? (p[idxStation]||'').trim() : (p[0]||'').trim();
-                if (st !== '' && !isNaN(parseInt(st))) currentStation = st;
-                
-                var item = idxItem >= 0 ? (p[idxItem]||'').trim() : (p[1]||'').trim();
-                var model = idxModel >= 0 ? (p[idxModel]||'').trim() : (p[2]||'').trim();
-                var serial = idxSerial >= 0 ? (p[idxSerial]||'').trim() : (p[3]||'').trim();
-                var loc = idxLoc >= 0 ? (p[idxLoc]||'').trim() : 'Computer Lab | Station ' + currentStation;
-                var cond = idxCond >= 0 ? (p[idxCond]||'').trim().toLowerCase() : (p[5]||'Working').trim().toLowerCase();
-                var notes = idxNotes >= 0 ? (p[idxNotes]||'').trim() : '';
 
-                if (item && model) {
-                    await API.lab.addEquipment({
-                        equipment_type: item,
-                        model: model,
-                        serial_number: serial || ('SN-' + Date.now() + '-' + i),
-                        location: loc,
-                        status: cond.includes('work') || cond.includes('avail') ? 'available' : 'maintenance',
-                        notes: notes
-                    });
-                    count++;
+            } else if (type === 'equipment') { // This is workstations
+                // Station, Item, Model, Serial Number, Location, CPU Lockable, Working/ Not working, COMMENT
+                var idxStation = findColIndex(['station']);
+                var idxItem = findColIndex(['item', 'type']);
+                var idxModel = findColIndex(['model']);
+                var idxSerial = findColIndex(['serialnumber', 'serial']);
+                var idxLoc = findColIndex(['location']);
+                var idxCpuLock = findColIndex(['cpulockable', 'cpulock']);
+                var idxWorking = findColIndex(['workingnotworking', 'working']);
+                var idxComment = findColIndex(['comment', 'notes']);
+
+                var stationVal = idxStation >= 0 ? p[idxStation] : '';
+                if (stationVal && !isNaN(parseInt(stationVal))) {
+                    currentStation = stationVal.trim();
                 }
-            } else {
-                var devType = idxItem >= 0 ? (p[idxItem]||'').trim() : (p[0]||'Device').trim();
-                var model = idxModel >= 0 ? (p[idxModel]||'').trim() : (p[1]||'').trim();
-                var serial = idxSerial >= 0 ? (p[idxSerial]||'').trim() : (p[2]||'').trim();
-                var loc = idxLoc >= 0 ? (p[idxLoc]||'').trim() : (p[3]||'').trim();
-                
+
+                var item = idxItem >= 0 ? p[idxItem] : '';
+                var model = idxModel >= 0 ? p[idxModel] : '';
+                var serial = idxSerial >= 0 ? p[idxSerial] : '';
+                var loc = idxLoc >= 0 ? p[idxLoc] : 'Computer Lab';
+                var cpuLock = idxCpuLock >= 0 ? p[idxCpuLock] : '';
+                var working = idxWorking >= 0 ? p[idxWorking] : 'Working';
+                var comment = idxComment >= 0 ? p[idxComment] : '';
+
+                if (!item || !model) continue;
+
+                // Ensure location contains "Station X" so it groups correctly in the status tab
+                var finalLoc = loc;
+                if (finalLoc.indexOf('Station') === -1) {
+                    finalLoc += ' - Station ' + currentStation;
+                }
+                if (!serial) serial = 'EQ-' + Date.now() + '-' + i;
+
+                var status = 'available';
+                var workLower = working.toLowerCase();
+                if (workLower.includes('not') || workLower.includes('down') || workLower.includes('maint') || workLower.includes('no')) {
+                    status = 'maintenance';
+                }
+
+                var combinedNotes = comment;
+                if (cpuLock) combinedNotes += (combinedNotes ? ' | ' : '') + 'CPU Lockable: ' + cpuLock;
+
+                await API.lab.addEquipment({
+                    equipment_type: item,
+                    brand: '',
+                    model: model,
+                    serial_number: serial,
+                    location: finalLoc,
+                    status: status,
+                    notes: combinedNotes
+                });
+                count++;
+
+            } else { // other-devices
+                // DEVICE TYPE, MODEL, SERIAL NUMBER, LOCATION, ASSIGNED TO, CONDITION, NOTES
+                var idxDevType = findColIndex(['devicetype', 'type']);
+                var idxModel = findColIndex(['model']);
+                var idxSerial = findColIndex(['serialnumber', 'serial']);
+                var idxLoc = findColIndex(['location']);
+                var idxAssigned = findColIndex(['assignedto', 'assigned']);
+                var idxCond = findColIndex(['condition']);
+                var idxNotes = findColIndex(['notes', 'comment']);
+
+                var devType = idxDevType >= 0 ? p[idxDevType] : '';
+                var model = idxModel >= 0 ? p[idxModel] : '';
+                var serial = idxSerial >= 0 ? p[idxSerial] : '';
+                var loc = idxLoc >= 0 ? p[idxLoc] : '';
+                var assignedStr = idxAssigned >= 0 ? p[idxAssigned] : '';
+                var condition = idxCond >= 0 ? p[idxCond] : '';
+                var notes = idxNotes >= 0 ? p[idxNotes] : '';
+
+                if (!devType || !model) continue;
+                if (!serial) serial = 'DEV-' + Date.now() + '-' + i;
+
+                var status = 'available';
+                var condLower = condition.toLowerCase();
+                if (condLower.includes('maint') || condLower.includes('repair') || condLower.includes('bad') || condLower.includes('down')) {
+                    status = 'maintenance';
+                } else if (condLower.includes('use') || condLower.includes('assign')) {
+                    status = 'in-use';
+                }
+
+                var combinedNotes = notes;
+                if (assignedStr) {
+                    combinedNotes += (combinedNotes ? ' | ' : '') + 'Assigned to: ' + assignedStr;
+                }
+
                 await API.lab.addDevice({
                     device_type: devType,
                     model: model,
-                    serial_number: serial || ('DEV-' + Date.now() + '-' + i),
+                    serial_number: serial,
                     location: loc,
-                    status: 'available'
+                    status: status,
+                    notes: combinedNotes
                 });
                 count++;
             }
-        } 
+        }
         showToast(count + ' items imported', 'success');
         await loadLabData();
         await loadLabTab();

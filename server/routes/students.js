@@ -63,49 +63,67 @@ router.post('/bulk-import', requireRole('admin', 'instructor', 'super_admin'), u
         if (!req.file) return res.status(400).json({ error: 'CSV file required' });
         var content = fs.readFileSync(req.file.path, 'utf8');
         if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
-        
+
         var lines = content.split(/\r?\n/).filter(function(l) { return l.trim().length > 0; });
-        if (lines.length < 2) return res.status(400).json({ error: 'Need header + data' });
-        
-        var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase().replace(/["']/g,'').replace(/\s+/g,'_'); });
-        
-        var idxFirst = -1, idxLast = -1, idxEmail = -1, idxPhone = -1, idxStream = -1;
+        if (lines.length < 2) return res.status(400).json({ error: 'CSV must have a header row and at least one data row.' });
+
+        // Normalize headers: lowercase, strip quotes, collapse whitespace
+        var rawHeaders = lines[0].split(',').map(function(h) { return h.trim().replace(/["']/g, ''); });
+        var headers = rawHeaders.map(function(h) { return h.toLowerCase().replace(/\s+/g, '_'); });
+
+        // Locate required columns
+        // Accepts: "First Name" OR "first_name"
+        // Accepts: "Second Name" OR "last_name" OR "Last Name"
+        var idxFirst = -1, idxLast = -1, idxEmail = -1, idxStream = -1;
         for (var i = 0; i < headers.length; i++) {
             var h = headers[i];
-            if (h.includes('first') && h.includes('name')) idxFirst = i;
-            if (h.includes('last') && h.includes('name')) idxLast = i;
+            if (h === 'first_name' || (h.includes('first') && h.includes('name'))) idxFirst = i;
+            if (h === 'second_name' || h === 'last_name' ||
+                (h.includes('second') && h.includes('name')) ||
+                (h.includes('last') && h.includes('name'))) idxLast = i;
             if (h.includes('email')) idxEmail = i;
-            if (h.includes('phone')) idxPhone = i;
             if (h.includes('stream')) idxStream = i;
         }
-        
-        if (idxFirst < 0 || idxLast < 0) {
-            return res.status(400).json({ error: 'Need first_name and last_name columns. Found: ' + headers.join(', ') });
+
+        // Validate all 4 required columns are present
+        var missing = [];
+        if (idxFirst < 0)  missing.push('First Name');
+        if (idxLast  < 0)  missing.push('Second Name');
+        if (idxEmail < 0)  missing.push('Email');
+        if (idxStream < 0) missing.push('Stream');
+        if (missing.length > 0) {
+            return res.status(400).json({
+                error: 'Missing required column(s): ' + missing.join(', ') +
+                       '. Expected header: "First Name,Second Name,Email,Stream". Found: ' + rawHeaders.join(', ')
+            });
         }
-        
+
         var imported = 0, errors = [];
         var cid = req.user.centre_id || req.body.centre_id;
-        
+
         for (var j = 1; j < lines.length; j++) {
             var cols = lines[j].split(',');
             if (cols.length < 2) continue;
-            
+
             var fn = String(cols[idxFirst] || '').trim().replace(/["']/g, '');
-            var ln = String(cols[idxLast] || '').trim().replace(/["']/g, '');
-            var em = idxEmail >= 0 ? String(cols[idxEmail] || '').trim().replace(/["']/g, '') : '';
-            var ph = idxPhone >= 0 ? String(cols[idxPhone] || '').trim().replace(/["']/g, '') : '';
-            var st = idxStream >= 0 ? String(cols[idxStream] || '').trim().replace(/["']/g, '') : '';
-            
-            if (!fn || !ln) continue;
-            if (em && !em.includes('@')) em = '';
-            
+            var ln = String(cols[idxLast]  || '').trim().replace(/["']/g, '');
+            var em = String(cols[idxEmail] || '').trim().replace(/["']/g, '');
+            var st = String(cols[idxStream]|| '').trim().replace(/["']/g, '');
+
+            if (!fn || !ln) continue;              // skip blank rows
+            if (em && !em.includes('@')) em = '';  // discard invalid emails
+
             try {
-                await query("INSERT INTO students (first_name,last_name,email,phone,stream,centre_id,status) VALUES ($1,$2,$3,$4,$5,$6,'active') ON CONFLICT DO NOTHING", [fn, ln, em || null, ph || null, st || null, cid]);
+                await query(
+                    "INSERT INTO students (first_name,last_name,email,stream,centre_id,status) VALUES ($1,$2,$3,$4,$5,'active') ON CONFLICT DO NOTHING",
+                    [fn, ln, em || null, st || null, cid]
+                );
                 imported++;
             } catch (err) {
                 errors.push({ row: j, error: err.message, data: fn + ' ' + ln });
             }
         }
+
         res.json({ message: 'Import done', imported: imported, errors: errors.slice(0, 5), total_errors: errors.length });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });

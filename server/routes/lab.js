@@ -44,7 +44,9 @@ router.post('/laptops', requireRole('admin', 'instructor', 'super_admin'), async
         var model = req.body.model || '';
         var sn = req.body.serial_number || ('SN-' + Date.now());
         var status = req.body.status || 'available';
-        var result = await query('INSERT INTO lab_laptops (brand, model, serial_number, centre_id, status) VALUES ($1,$2,$3,$4,$5) RETURNING *', [brand, model, sn, req.user.centre_id || req.body.centre_id, status]);
+        var assignedTo = req.body.assigned_to || null;
+        var notes = req.body.notes || '';
+        var result = await query('INSERT INTO lab_laptops (brand, model, serial_number, centre_id, status, assigned_to, notes) VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (serial_number) DO UPDATE SET brand = EXCLUDED.brand, model = EXCLUDED.model, status = EXCLUDED.status, assigned_to = EXCLUDED.assigned_to, notes = EXCLUDED.notes RETURNING *', [brand, model, sn, req.user.centre_id || req.body.centre_id, status, assignedTo, notes]);
         res.status(201).json(result.rows[0]);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
@@ -80,7 +82,7 @@ router.post('/equipment', requireRole('admin', 'instructor', 'super_admin'), asy
         var location = req.body.location || '';
         var status = req.body.status || 'available';
         var notes = req.body.notes || '';
-        var result = await query('INSERT INTO lab_equipment (equipment_type, brand, model, serial_number, centre_id, quantity, status, location, notes) VALUES ($1,$2,$3,$4,$5,1,$6,$7,$8) RETURNING *', [et, '', model, sn, req.user.centre_id || req.body.centre_id, status, location, notes]);
+        var result = await query('INSERT INTO lab_equipment (equipment_type, brand, model, serial_number, centre_id, quantity, status, location, notes) VALUES ($1,$2,$3,$4,$5,1,$6,$7,$8) ON CONFLICT (serial_number) DO UPDATE SET equipment_type = EXCLUDED.equipment_type, brand = EXCLUDED.brand, model = EXCLUDED.model, status = EXCLUDED.status, location = EXCLUDED.location, notes = EXCLUDED.notes RETURNING *', [et, '', model, sn, req.user.centre_id || req.body.centre_id, status, location, notes]);
         res.status(201).json(result.rows[0]);
     } catch (error) { console.error('Equipment POST error:', error.message); res.status(500).json({ error: error.message }); }
 });
@@ -112,7 +114,7 @@ router.post('/other-devices', requireRole('admin', 'instructor', 'super_admin'),
         var location = req.body.location || '';
         var status = req.body.status || 'available';
         var notes = req.body.notes || '';
-        var result = await query('INSERT INTO lab_other_devices (device_type, brand, model, serial_number, centre_id, status, location, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [dt, '', model, sn, req.user.centre_id || req.body.centre_id, status, location, notes]);
+        var result = await query('INSERT INTO lab_other_devices (device_type, brand, model, serial_number, centre_id, status, location, notes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (serial_number) DO UPDATE SET device_type = EXCLUDED.device_type, brand = EXCLUDED.brand, model = EXCLUDED.model, status = EXCLUDED.status, location = EXCLUDED.location, notes = EXCLUDED.notes RETURNING *', [dt, '', model, sn, req.user.centre_id || req.body.centre_id, status, location, notes]);
         res.status(201).json(result.rows[0]);
     } catch (error) { res.status(500).json({ error: error.message }); }
 });

@@ -115,7 +115,7 @@ async function downloadPerformanceTemplate() {
 }
 
 async function loadCiscoExams(content) { allStudents = await API.students.getAll(); allScores = await API.performance.get();
-    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><div><button class="btn btn-outline" onclick="downloadPerformanceTemplate()" style="margin-right:8px"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button></div><input type="file" id="ciscoCsvUpload" accept=".csv" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">Fill in the downloaded template: student_id, module_number, exam_score</div><table><thead><tr><th>Student</th><th>Module</th><th>Exam Score</th></tr></thead><tbody id="ciscoTable"></tbody></table></div>';
+    content.innerHTML = '<div class="card"><div class="card-header"><h3>Cisco Exams (40%)</h3><div><button class="btn btn-outline" onclick="downloadPerformanceTemplate()" style="margin-right:8px"><i class="fas fa-download"></i> Template</button><button class="btn btn-outline" onclick="document.getElementById(\'ciscoCsvUpload\').click()"><i class="fas fa-upload"></i> Upload CSV</button></div><input type="file" id="ciscoCsvUpload" accept=".csv,.txt" style="display:none" onchange="handleCiscoCsvUpload(event)"></div><div style="margin-bottom:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px">Download the template and upload the Cisco Netacad export file. Students are matched by email.</div><table><thead><tr><th>Student</th><th>Module</th><th>Exam Score</th></tr></thead><tbody id="ciscoTable"></tbody></table></div>';
     var cisco = allScores.filter(function(s) { return s.exam_score > 0; });
     var tbody = document.getElementById('ciscoTable');
     if (cisco.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px">No exam scores</td></tr>'; return; }
@@ -123,40 +123,145 @@ async function loadCiscoExams(content) { allStudents = await API.students.getAll
     tbody.innerHTML = html;
 }
 
+function parseCsvLine(line, delimiter) {
+    var parts = [];
+    var current = '';
+    var inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+        var char = line.charAt(i);
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === delimiter && !inQuotes) {
+            parts.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    parts.push(current.trim());
+    return parts;
+}
+
 async function handleCiscoCsvUpload(event) {
     var file = event.target.files[0]; if (!file) return;
     try { 
         showLoading(); 
-        var text = await file.text(); 
-        var lines = text.split('\n'); 
-        if (lines.length < 2) throw new Error('File is empty or missing data');
-        var headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        var idxSid = headers.findIndex(h => h.includes('student'));
-        var idxMod = headers.findIndex(h => h.includes('module'));
-        var idxExam = headers.findIndex(h => h.includes('exam') || h.includes('score'));
-        if (idxSid < 0) idxSid = 0;
-        if (idxMod < 0) idxMod = 1;
-        if (idxExam < 0) idxExam = 2;
-        var scores = [];
-        for (var i = 1; i < lines.length; i++) { 
-            var p = lines[i].split(','); 
-            if (p.length <= Math.max(idxSid, idxMod, idxExam)) continue; 
-            var sid = parseInt(p[idxSid].trim());
-            var modStr = p[idxMod].trim().replace(/[^\d]/g, ''); // Extract just the number from module string
-            var mod = parseInt(modStr || p[idxMod].trim()); 
-            var ex = parseFloat(p[idxExam].trim()); 
-            if (!isNaN(sid)&&!isNaN(mod)&&!isNaN(ex)) scores.push({ student_id: sid, module_number: mod, module_name: 'Module '+mod, quiz_score:0, practical_score:0, exam_score:ex }); 
+        var text = await file.text();
+        // Normalize line endings and strip BOM
+        text = text.replace(/\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        var lines = text.split('\n').filter(function(l) { return l.trim() !== ''; });
+        if (lines.length < 2) throw new Error('File is empty or missing data rows');
+        
+        // Detect delimiter (tab vs comma)
+        var delimiter = lines[0].indexOf('\t') > -1 ? '\t' : ',';
+        
+        var rawHeaders = parseCsvLine(lines[0], delimiter);
+        var headersNormalized = rawHeaders.map(function(h) {
+            return h.toLowerCase().replace(/[^a-z0-9]/g, '');
+        });
+
+        var expectedHeaders = [
+            'NAME', 'EMAIL', 'Final Exam Submitted', 'Survey Submitted', 'Completion', 'Final Exam Score',
+            'Chapter 10 - 14 Skills Assessment', 'Chapter 1 - 9 Skills Assessment', 'Skills Exams( Average )',
+            'Module 1: Module Exam', 'Module 2: Module Exam', 'Module 3: Module Exam', 'Module 4: Module Exam',
+            'Checkpoint Exam Modules 1-4', 'Module 5: Module Exam', 'Module 6: Module Exam',
+            'Checkpoint Exam Modules 5-6', 'Module 7: Module Exam', 'Module 8: Module Exam',
+            'Checkpoint Exam Modules 7-8', 'Module 9: Module Exam', 'Module 10: Module Exam',
+            'Module 11: Module Exam', 'Checkpoint Exam Modules 10-11', 'Module 12: Module Exam',
+            'Module 13: Module Exam', 'Checkpoint Exam Modules 12-13', 'Module 14: Module Exam',
+            'Chapter and Checkpoint Exams( Average )', 'Practice Final Exam Modules 1-9',
+            'Practice Final Exam Modules 10-14', 'Practice Final Exams( Average )',
+            'Final Exam Modules 1-9', 'Final Exam Modules 10-14', 'IT Essentials Course Final Exam',
+            'Final Exams( Average )', 'IT Essentials A+ 220-1101 Certification Practice Exam',
+            'IT Essentials A+ 220-1102 Certification Practice Exam',
+            'Certification Practice Exams( Average )', 'Class Grade %'
+        ];
+
+        var expectedNormalized = expectedHeaders.map(function(h) {
+            return h.toLowerCase().replace(/[^a-z0-9]/g, '');
+        });
+
+        // Find matches for each expected header
+        var headerIndices = {};
+        for (var idx = 0; idx < expectedHeaders.length; idx++) {
+            var norm = expectedNormalized[idx];
+            var csvIdx = headersNormalized.indexOf(norm);
+            if (csvIdx > -1) {
+                headerIndices[expectedHeaders[idx]] = csvIdx;
+            }
         }
-        if (scores.length === 0) throw new Error('No valid scores found. Check template format.');
-        await API.performance.saveBulk({ scores: scores }); 
-        showToast(scores.length+' exam scores uploaded','success'); 
-        allScores = await API.performance.get(); 
+
+        // Email index is required
+        var idxEmail = headerIndices['EMAIL'];
+        if (idxEmail === undefined) {
+            // fallback lookup
+            idxEmail = headersNormalized.findIndex(function(h) { return h.includes('email'); });
+            if (idxEmail === -1) {
+                throw new Error('Email column is required to match students.');
+            }
+            headerIndices['EMAIL'] = idxEmail;
+        }
+
+        // Build email->id mapping
+        var emailMap = {};
+        for (var k = 0; k < allStudents.length; k++) {
+            if (allStudents[k].email) {
+                emailMap[allStudents[k].email.trim().toLowerCase()] = allStudents[k].id;
+            }
+        }
+
+        var payloadRows = [];
+        var unmatched = [];
+
+        for (var i = 1; i < lines.length; i++) {
+            var parts = parseCsvLine(lines[i], delimiter);
+            if (parts.length <= idxEmail) continue;
+
+            var email = parts[idxEmail].trim().toLowerCase();
+            if (!email) continue;
+
+            var sid = emailMap[email];
+            if (!sid) {
+                unmatched.push(email);
+                continue;
+            }
+
+            // Construct row with exactly the expected keys
+            var rowData = {};
+            for (var key in headerIndices) {
+                var colIdx = headerIndices[key];
+                if (colIdx < parts.length) {
+                    rowData[key] = parts[colIdx];
+                }
+            }
+
+            payloadRows.push({
+                student_id: sid,
+                row: rowData
+            });
+        }
+
+        if (payloadRows.length === 0) {
+            var msg = 'No valid student records found.';
+            if (unmatched.length > 0) {
+                msg += ' Unmatched emails: ' + unmatched.slice(0, 3).join(', ');
+            }
+            throw new Error(msg);
+        }
+
+        var res = await API.performance.saveCiscoUpload({ rows: payloadRows });
+        var notice = res.count + ' student score records updated successfully';
+        if (unmatched.length > 0) {
+            notice += '. ' + unmatched.length + ' email(s) not found in system.';
+        }
+        showToast(notice, 'success');
+        allScores = await API.performance.get();
         await loadPerformanceTab();
-    } catch (e) { 
-        showToast('Error: '+e.message,'error'); 
-    } finally { 
-        hideLoading(); 
-        event.target.value = ''; 
+    } catch (e) {
+        showToast('Error: ' + e.message, 'error');
+    } finally {
+        hideLoading();
+        event.target.value = '';
     }
 }
 

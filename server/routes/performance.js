@@ -73,6 +73,139 @@ router.post('/bulk', requireRole('admin', 'instructor', 'super_admin'), async (r
     }
 });
 
+// POST /api/performance/cisco-upload
+// Accepts a parsed array of Netacad CSV rows (already matched to students).
+// Each entry: { student_id, row: { column_name: value, ... } }
+router.post('/cisco-upload', requireRole('admin', 'instructor', 'super_admin'), async (req, res) => {
+    try {
+        const { rows } = req.body;
+        if (!rows || !Array.isArray(rows)) {
+            return res.status(400).json({ error: 'rows array is required' });
+        }
+
+        const parseNum = (v) => { const n = parseFloat(v); return isNaN(n) ? null : Math.min(100, Math.max(0, n)); };
+        const parseBool = (v) => { if (!v) return null; const s = String(v).trim().toLowerCase(); return s === 'yes' || s === 'true' || s === '1'; };
+
+        let saved = 0;
+        const errors = [];
+
+        for (const entry of rows) {
+            const { student_id, row } = entry;
+            if (!student_id || !row) continue;
+            try {
+                await query(`
+                    INSERT INTO cisco_exam_results (
+                        student_id, centre_id, uploaded_by,
+                        final_exam_submitted, survey_submitted, completion,
+                        final_exam_score, skills_ch10_14, skills_ch1_9, skills_exams_avg,
+                        mod1_exam, mod2_exam, mod3_exam, mod4_exam, checkpoint_1_4,
+                        mod5_exam, mod6_exam, checkpoint_5_6,
+                        mod7_exam, mod8_exam, checkpoint_7_8,
+                        mod9_exam, mod10_exam, mod11_exam, checkpoint_10_11,
+                        mod12_exam, mod13_exam, checkpoint_12_13,
+                        mod14_exam, chapter_checkpoint_avg,
+                        practice_final_1_9, practice_final_10_14, practice_finals_avg,
+                        final_exam_1_9, final_exam_10_14, it_essentials_final, final_exams_avg,
+                        cert_practice_1101, cert_practice_1102, cert_practice_avg, class_grade
+                    ) VALUES (
+                        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+                        $11,$12,$13,$14,$15,$16,$17,$18,$19,$20,
+                        $21,$22,$23,$24,$25,$26,$27,$28,$29,$30,
+                        $31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41
+                    )
+                    ON CONFLICT (student_id) DO UPDATE SET
+                        centre_id=$2, uploaded_by=$3,
+                        final_exam_submitted=$4, survey_submitted=$5, completion=$6,
+                        final_exam_score=$7, skills_ch10_14=$8, skills_ch1_9=$9, skills_exams_avg=$10,
+                        mod1_exam=$11, mod2_exam=$12, mod3_exam=$13, mod4_exam=$14, checkpoint_1_4=$15,
+                        mod5_exam=$16, mod6_exam=$17, checkpoint_5_6=$18,
+                        mod7_exam=$19, mod8_exam=$20, checkpoint_7_8=$21,
+                        mod9_exam=$22, mod10_exam=$23, mod11_exam=$24, checkpoint_10_11=$25,
+                        mod12_exam=$26, mod13_exam=$27, checkpoint_12_13=$28,
+                        mod14_exam=$29, chapter_checkpoint_avg=$30,
+                        practice_final_1_9=$31, practice_final_10_14=$32, practice_finals_avg=$33,
+                        final_exam_1_9=$34, final_exam_10_14=$35, it_essentials_final=$36, final_exams_avg=$37,
+                        cert_practice_1101=$38, cert_practice_1102=$39, cert_practice_avg=$40,
+                        class_grade=$41, upload_date=NOW()
+                `, [
+                    student_id, req.user.centre_id, req.user.id,
+                    parseBool(row['Final Exam Submitted']), parseBool(row['Survey Submitted']),
+                    parseNum(row['Completion']), parseNum(row['Final Exam Score']),
+                    parseNum(row['Chapter 10 - 14 Skills Assessment']), parseNum(row['Chapter 1 - 9 Skills Assessment']),
+                    parseNum(row['Skills Exams( Average )']),
+                    parseNum(row['Module 1: Module Exam']), parseNum(row['Module 2: Module Exam']),
+                    parseNum(row['Module 3: Module Exam']), parseNum(row['Module 4: Module Exam']),
+                    parseNum(row['Checkpoint Exam Modules 1-4']),
+                    parseNum(row['Module 5: Module Exam']), parseNum(row['Module 6: Module Exam']),
+                    parseNum(row['Checkpoint Exam Modules 5-6']),
+                    parseNum(row['Module 7: Module Exam']), parseNum(row['Module 8: Module Exam']),
+                    parseNum(row['Checkpoint Exam Modules 7-8']),
+                    parseNum(row['Module 9: Module Exam']), parseNum(row['Module 10: Module Exam']),
+                    parseNum(row['Module 11: Module Exam']), parseNum(row['Checkpoint Exam Modules 10-11']),
+                    parseNum(row['Module 12: Module Exam']), parseNum(row['Module 13: Module Exam']),
+                    parseNum(row['Checkpoint Exam Modules 12-13']),
+                    parseNum(row['Module 14: Module Exam']), parseNum(row['Chapter and Checkpoint Exams( Average )']),
+                    parseNum(row['Practice Final Exam Modules 1-9']), parseNum(row['Practice Final Exam Modules 10-14']),
+                    parseNum(row['Practice Final Exams( Average )']),
+                    parseNum(row['Final Exam Modules 1-9']), parseNum(row['Final Exam Modules 10-14']),
+                    parseNum(row['IT Essentials Course Final Exam']), parseNum(row['Final Exams( Average )']),
+                    parseNum(row['IT Essentials A+ 220-1101 Certification Practice Exam']),
+                    parseNum(row['IT Essentials A+ 220-1102 Certification Practice Exam']),
+                    parseNum(row['Certification Practice Exams( Average )']),
+                    parseNum(row['Class Grade %'])
+                ]);
+
+                // Sync module-by-module scores into performance_scores
+                const moduleMap = [
+                    [1,'Module 1: Module Exam'],[2,'Module 2: Module Exam'],[3,'Module 3: Module Exam'],
+                    [4,'Module 4: Module Exam'],[5,'Module 5: Module Exam'],[6,'Module 6: Module Exam'],
+                    [7,'Module 7: Module Exam'],[8,'Module 8: Module Exam'],[9,'Module 9: Module Exam'],
+                    [10,'Module 10: Module Exam'],[11,'Module 11: Module Exam'],[12,'Module 12: Module Exam'],
+                    [13,'Module 13: Module Exam'],[14,'Module 14: Module Exam']
+                ];
+                for (const [modNum, colName] of moduleMap) {
+                    const score = parseNum(row[colName]);
+                    if (score !== null) {
+                        await query(`
+                            INSERT INTO performance_scores (student_id, module_number, module_name, exam_score)
+                            VALUES ($1, $2, $3, $4)
+                            ON CONFLICT (student_id, module_number)
+                            DO UPDATE SET exam_score=$4, updated_at=NOW()
+                        `, [student_id, modNum, 'Module ' + modNum, score]);
+                    }
+                }
+                saved++;
+            } catch (rowErr) {
+                console.error('Row error for student_id', student_id, ':', rowErr.message);
+                errors.push({ student_id, error: rowErr.message });
+            }
+        }
+        res.json({ message: `${saved} student record(s) saved`, count: saved, errors });
+    } catch (error) {
+        console.error('Cisco upload error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /api/performance/cisco-results
+router.get('/cisco-results', async (req, res) => {
+    try {
+        let sql = `SELECT cer.*, s.first_name, s.last_name, s.email, s.stream
+                   FROM cisco_exam_results cer JOIN students s ON cer.student_id = s.id WHERE 1=1`;
+        const params = [];
+        if (req.user.role === 'admin' || req.user.role === 'instructor') {
+            sql += ' AND s.centre_id = $1';
+            params.push(req.user.centre_id);
+        }
+        sql += ' ORDER BY s.first_name, s.last_name';
+        const result = await query(sql, params);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Get cisco results error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 router.get('/summary', async (req, res) => {
     try {
         let sql = "SELECT s.stream, AVG(ps.total_score) as avg_score, MIN(ps.total_score) as min_score, MAX(ps.total_score) as max_score, COUNT(*) as total_entries FROM performance_scores ps JOIN students s ON ps.student_id = s.id WHERE 1=1";

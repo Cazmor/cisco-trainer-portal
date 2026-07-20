@@ -113,7 +113,9 @@ var API = {
         createIntervention: function(d) { return API.request('/performance/interventions', { method: 'POST', body: d }); }, 
         updateIntervention: function(id, d) { return API.request('/performance/interventions/' + id, { method: 'PUT', body: d }); }, 
         getFeedback: function() { return API.request('/performance/feedback'); }, 
-        addFeedback: function(d) { return API.request('/performance/feedback', { method: 'POST', body: d }); } 
+        addFeedback: function(d) { return API.request('/performance/feedback', { method: 'POST', body: d }); },
+        saveCiscoUpload: function(d) { return API.request('/performance/cisco-upload', { method: 'POST', body: d }); },
+        getCiscoResults: function() { return API.request('/performance/cisco-results'); }
     },
     
     // Lab endpoints
