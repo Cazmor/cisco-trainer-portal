@@ -39,11 +39,11 @@ var API = {
         try {
             var r = await fetch(this.baseUrl + endpoint, config);
             
-            // Handle 401 Unauthorized - Token expired
-            if (r.status === 401) {
+            // Handle 401/403 - Token missing, expired or invalid
+            if (r.status === 401 || r.status === 403) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
-                window.location.href = '/login.html';
+                window.location.href = '/login.html?reason=session_expired';
                 throw new Error('Session expired. Please login again.');
             }
             

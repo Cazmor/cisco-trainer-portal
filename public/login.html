@@ -48,6 +48,21 @@
             this.querySelector('i').classList.toggle('fa-eye');
             this.querySelector('i').classList.toggle('fa-eye-slash');
         });
+
+        // Show session expired message if redirected from expired token
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('reason') === 'session_expired') {
+                var errorDiv = document.getElementById('errorMessage');
+                errorDiv.innerHTML = '<i class="fas fa-clock"></i> Your session has expired. Please sign in again.';
+                errorDiv.style.display = 'block';
+                errorDiv.style.background = '#fff8e1';
+                errorDiv.style.color = '#856404';
+                errorDiv.style.border = '1px solid #ffc107';
+                errorDiv.style.borderRadius = '6px';
+                errorDiv.style.padding = '10px 14px';
+            }
+        })();
         
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();

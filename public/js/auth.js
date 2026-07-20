@@ -35,14 +35,19 @@ function checkAuth() {
         return false;
     }
     
-    // Verify token with server (optional but recommended)
-    // This checks if token is still valid on server
+    // Verify token with server
     fetch('/api/auth/me', {
         headers: { 'Authorization': 'Bearer ' + token }
     }).then(function(response) {
-        if (response.status === 401) {
-            // Token expired or invalid
-            logout('Session expired. Please login again.');
+        if (response.status === 401 || response.status === 403) {
+            // Token expired or invalid - clear storage and redirect
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            var currentPage = window.location.pathname.split('/').pop();
+            var publicPages = ['login.html', 'register.html', 'forgot-password.html', 'reset-password.html'];
+            if (!publicPages.includes(currentPage)) {
+                window.location.href = '/login.html?reason=session_expired';
+            }
         }
     }).catch(function() {});
     
@@ -112,7 +117,7 @@ function logout(message) {
 // ============================================
 
 var inactivityTimer = null;
-var INACTIVITY_TIME = 30 * 60 * 1000; // 30 minutes (change to 60000 for 1 minute test)
+var INACTIVITY_TIME = 8 * 60 * 60 * 1000; // 8 hours
 
 // Function to reset the timer (called on user activity)
 function resetInactivityTimer() {
