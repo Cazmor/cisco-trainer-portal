@@ -5,7 +5,7 @@ async function loadKPIPage() {
     var contentArea = document.getElementById('contentArea');
     if (!contentArea) return;
     var user = getUser();
-    contentArea.innerHTML = '<div class="kpi-container"><div class="kpi-header"><h2><i class="fas fa-trophy"></i> Cisco Trainer Performance Scorecard 2026</h2><div><button class="btn btn-outline" onclick="loadKPIPage()"><i class="fas fa-sync"></i> Refresh</button>' + (user.role === 'super_admin' ? '<button class="btn btn-primary" onclick="showRankings()"><i class="fas fa-medal"></i> Rankings</button>' : '') + '</div></div><div class="kpi-overall-score" id="overallScore"><p>Loading...</p></div><div class="kpi-grid" id="kpiGrid"></div></div><div id="scoringModal" class="modal"><div class="modal-content" style="max-width:950px"><div class="modal-header"><h3 id="scoringTitle">Sub-Objective Scoring</h3><button class="modal-close" onclick="hideModal(\'scoringModal\')">&times;</button></div><div id="scoringContent"></div><div class="modal-footer"><button class="btn btn-outline" onclick="hideModal(\'scoringModal\')">Cancel</button><button class="btn btn-primary" onclick="saveSubScores()"><i class="fas fa-save"></i> Save Scores</button></div></div></div><div id="rankingsModal" class="modal"><div class="modal-content" style="max-width:800px"><div class="modal-header"><h3>Instructor Rankings</h3><button class="modal-close" onclick="hideModal(\'rankingsModal\')">&times;</button></div><div id="rankingsContent"></div></div></div>';
+    contentArea.innerHTML = '<div class="kpi-container"><div class="kpi-header"><h2><i class="fas fa-trophy"></i> Cisco Trainer Performance Scorecard 2026</h2><div><button class="btn btn-outline" onclick="loadKPIPage()"><i class="fas fa-sync"></i> Refresh</button>' + (user.role === 'super_admin' ? '<button class="btn btn-primary" onclick="showRankings()"><i class="fas fa-medal"></i> Rankings</button>' : '') + '</div></div><div class="kpi-overall-score" id="overallScore"><p>Loading...</p></div><div class="kpi-grid" id="kpiGrid"></div></div><div id="scoringModal" class="modal"><div class="modal-content" style="max-width:950px"><div class="modal-header"><h3 id="scoringTitle">Pro Intelligence Score Evidence</h3><button class="modal-close" onclick="hideModal(\'scoringModal\')">&times;</button></div><div id="scoringContent"></div><div class="modal-footer"><button class="btn btn-primary" onclick="hideModal(\'scoringModal\')">Close</button></div></div></div><div id="rankingsModal" class="modal"><div class="modal-content" style="max-width:800px"><div class="modal-header"><h3>Instructor Rankings</h3><button class="modal-close" onclick="hideModal(\'rankingsModal\')">&times;</button></div><div id="rankingsContent"></div></div></div>';
     await loadKPIData();
 }
 
@@ -75,7 +75,8 @@ async function loadKPIData() {
     try { 
         showLoading(); 
         kpiData = await API.kpi.getScorecard(); 
-        subScores = JSON.parse(localStorage.getItem('kpiSubScores') || '{}'); await autoScoreFromSystem(); localStorage.setItem('kpiSubScores', JSON.stringify(subScores));
+        subScores = {}; 
+        await autoScoreFromSystem(); 
         renderKPIScorecard(); 
         hideLoading(); 
     } catch (e) { hideLoading(); showToast('Error: '+e.message,'error'); }
@@ -119,63 +120,47 @@ async function autoScoreFromSystem() {
         var innovCount = innovations.length;
         
         var key = 'kpi_1';
-        if (!subScores[key]) {
-            var labScore = labHealth >= 90 ? 5 : labHealth >= 80 ? 4 : labHealth >= 70 ? 3 : labHealth >= 60 ? 2 : 1;
-            var logScore = logsSubmitted >= 10 ? 5 : logsSubmitted >= 7 ? 4 : logsSubmitted >= 5 ? 3 : logsSubmitted >= 2 ? 2 : 1;
-            var prevScore = totalPreventive > 0 ? (preventiveDone >= totalPreventive ? 5 : preventiveDone >= totalPreventive*0.75 ? 4 : preventiveDone >= totalPreventive*0.5 ? 3 : preventiveDone >= totalPreventive*0.25 ? 2 : 1) : 3;
-            var downtimeScore = downtimeIncidents === 0 ? 5 : downtimeIncidents === 1 ? 4 : downtimeIncidents === 2 ? 3 : downtimeIncidents <= 4 ? 2 : 1;
-            subScores[key] = [labScore, logScore, prevScore, downtimeScore];
-        }
+        var labScore = labHealth >= 90 ? 5 : labHealth >= 80 ? 4 : labHealth >= 70 ? 3 : labHealth >= 60 ? 2 : 1;
+        var logScore = logsSubmitted >= 10 ? 5 : logsSubmitted >= 7 ? 4 : logsSubmitted >= 5 ? 3 : logsSubmitted >= 2 ? 2 : 1;
+        var prevScore = totalPreventive > 0 ? (preventiveDone >= totalPreventive ? 5 : preventiveDone >= totalPreventive*0.75 ? 4 : preventiveDone >= totalPreventive*0.5 ? 3 : preventiveDone >= totalPreventive*0.25 ? 2 : 1) : 3;
+        var downtimeScore = downtimeIncidents === 0 ? 5 : downtimeIncidents === 1 ? 4 : downtimeIncidents === 2 ? 3 : downtimeIncidents <= 4 ? 2 : 1;
+        subScores[key] = [labScore, logScore, prevScore, downtimeScore];
         
         key = 'kpi_2';
-        if (!subScores[key]) {
-            var hourScore = trainingHours >= 15 ? 5 : trainingHours >= 14 ? 4 : trainingHours >= 12 ? 3 : trainingHours >= 10 ? 2 : 1;
-            var attScore = avgAttendance >= 70 ? 5 : avgAttendance >= 60 ? 4 : avgAttendance >= 50 ? 3 : avgAttendance >= 40 ? 2 : 1;
-            var pracScore = avgScore >= 70 ? 5 : avgScore >= 60 ? 4 : avgScore >= 50 ? 3 : avgScore >= 40 ? 2 : 1;
-            subScores[key] = [hourScore, attScore, pracScore];
-        }
+        var hourScore = trainingHours >= 15 ? 5 : trainingHours >= 14 ? 4 : trainingHours >= 12 ? 3 : trainingHours >= 10 ? 2 : 1;
+        var attScore = avgAttendance >= 70 ? 5 : avgAttendance >= 60 ? 4 : avgAttendance >= 50 ? 3 : avgAttendance >= 40 ? 2 : 1;
+        var pracScore = avgScore >= 70 ? 5 : avgScore >= 60 ? 4 : avgScore >= 50 ? 3 : avgScore >= 40 ? 2 : 1;
+        subScores[key] = [hourScore, attScore, pracScore];
         
         key = 'kpi_3';
-        if (!subScores[key]) {
-            var revScore = resolvedInterventions >= 5 ? 5 : resolvedInterventions >= 4 ? 4 : resolvedInterventions >= 3 ? 3 : resolvedInterventions >= 2 ? 2 : 1;
-            var fbScore = feedbackCount >= 20 ? 5 : feedbackCount >= 15 ? 4 : feedbackCount >= 10 ? 3 : feedbackCount >= 5 ? 2 : 1;
-            subScores[key] = [revScore, fbScore, 3];
-        }
+        var revScore = resolvedInterventions >= 5 ? 5 : resolvedInterventions >= 4 ? 4 : resolvedInterventions >= 3 ? 3 : resolvedInterventions >= 2 ? 2 : 1;
+        var fbScore = feedbackCount >= 20 ? 5 : feedbackCount >= 15 ? 4 : feedbackCount >= 10 ? 3 : feedbackCount >= 5 ? 2 : 1;
+        subScores[key] = [revScore, fbScore, 3];
         
         key = 'kpi_4';
-        if (!subScores[key]) {
-            var reportScore = submittedReports >= 5 ? 5 : submittedReports >= 4 ? 4 : submittedReports >= 3 ? 3 : submittedReports >= 2 ? 2 : 1;
-            var insightScore = submittedReports >= 4 ? 4 : submittedReports >= 2 ? 3 : 2;
-            var actionScore = submittedReports >= 5 ? 5 : submittedReports >= 3 ? 4 : submittedReports >= 1 ? 3 : 2;
-            subScores[key] = [reportScore, insightScore, actionScore];
-        }
+        var reportScore = submittedReports >= 5 ? 5 : submittedReports >= 4 ? 4 : submittedReports >= 3 ? 3 : submittedReports >= 2 ? 2 : 1;
+        var insightScore = submittedReports >= 4 ? 4 : submittedReports >= 2 ? 3 : 2;
+        var actionScore = submittedReports >= 5 ? 5 : submittedReports >= 3 ? 4 : submittedReports >= 1 ? 3 : 2;
+        subScores[key] = [reportScore, insightScore, actionScore];
         
         key = 'kpi_5';
-        if (!subScores[key]) {
-            var fbScore = feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : feedbackCount >= 1 ? 2 : 1;
-            var satScore = avgScore >= 70 ? 4 : avgScore >= 50 ? 3 : 2;
-            var docScore = feedbackCount >= 15 ? 5 : feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : 2;
-            subScores[key] = [fbScore, satScore, docScore];
-        }
+        var fbScore = feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : feedbackCount >= 1 ? 2 : 1;
+        var satScore = avgScore >= 70 ? 4 : avgScore >= 50 ? 3 : 2;
+        var docScore = feedbackCount >= 15 ? 5 : feedbackCount >= 10 ? 4 : feedbackCount >= 5 ? 3 : 2;
+        subScores[key] = [fbScore, satScore, docScore];
         
         key = 'kpi_6';
-        if (!subScores[key]) {
-            var cpdScore = cpdCount >= 2 ? 5 : cpdCount >= 1 ? 3 : 1;
-            var insights = JSON.parse(localStorage.getItem('teamInsights') || '[]');
-            var shareScore = insights.length >= 5 ? 5 : insights.length >= 3 ? 4 : insights.length >= 1 ? 3 : 1;
-            var hourCPD = cpdHours >= 4 ? 5 : cpdHours >= 3 ? 4 : cpdHours >= 2 ? 3 : cpdHours >= 1 ? 2 : 1;
-            subScores[key] = [cpdScore, shareScore, hourCPD];
-        }
+        var cpdScore = cpdCount >= 2 ? 5 : cpdCount >= 1 ? 3 : 1;
+        var insights = JSON.parse(localStorage.getItem('teamInsights') || '[]');
+        var shareScore = insights.length >= 5 ? 5 : insights.length >= 3 ? 4 : insights.length >= 1 ? 3 : 1;
+        var hourCPD = cpdHours >= 4 ? 5 : cpdHours >= 3 ? 4 : cpdHours >= 2 ? 3 : cpdHours >= 1 ? 2 : 1;
+        subScores[key] = [cpdScore, shareScore, hourCPD];
         
         key = 'kpi_7';
-        if (!subScores[key]) {
-            var innovScore = innovCount >= 3 ? 5 : innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 1;
-            var impactScore = innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 1;
-            var shareInnovScore = innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 2;
-            subScores[key] = [innovScore, impactScore, shareInnovScore];
-        }
-        
-        localStorage.setItem('kpiSubScores', JSON.stringify(subScores));
+        var innovScore = innovCount >= 3 ? 5 : innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 1;
+        var impactScore = innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 1;
+        var shareInnovScore = innovCount >= 2 ? 4 : innovCount >= 1 ? 3 : 2;
+        subScores[key] = [innovScore, impactScore, shareInnovScore];
     } catch (e) { console.error('Auto-score error:', e); }
 }
 
@@ -205,7 +190,7 @@ function renderKPIScorecard() {
         var pct = Math.round((avg / 5) * 100);
         var level = pct >= 90 ? 'excellent' : pct >= 70 ? 'good' : pct >= 50 ? 'average' : 'poor';
         
-        html += '<div class="kpi-card kpi-' + level + '"><div class="kpi-card-header"><div class="kpi-card-title"><i class="fas ' + def.icon + '" style="margin-right:8px;color:#8b5cf6"></i>KPI ' + def.id + ': ' + def.name + '</div></div><div class="kpi-value-display"><span class="kpi-value">' + avg + '</span><span class="kpi-unit">/5</span><div class="kpi-target">Target: ' + def.target + '</div></div><div style="text-align:center;margin:8px 0;font-size:20px">' + getStarsHTML(avg) + '</div><div class="kpi-scale">' + scores.length + ' sub-objectives | Avg: ' + avg + '/5</div><button class="kpi-evidence-btn" onclick="showScoringModal(' + def.id + ')"><i class="fas fa-edit"></i> Score Sub-Objectives</button></div>';
+        html += '<div class="kpi-card kpi-' + level + '"><div class="kpi-card-header"><div class="kpi-card-title"><i class="fas ' + def.icon + '" style="margin-right:8px;color:#8b5cf6"></i>KPI ' + def.id + ': ' + def.name + '</div></div><div class="kpi-value-display"><span class="kpi-value">' + avg + '</span><span class="kpi-unit">/5</span><div class="kpi-target">Target: ' + def.target + '</div></div><div style="text-align:center;margin:8px 0;font-size:20px">' + getStarsHTML(avg) + '</div><div class="kpi-scale">' + scores.length + ' sub-objectives | Avg: ' + avg + '/5</div><button class="kpi-evidence-btn" onclick="showScoringModal(' + def.id + ')"><i class="fas fa-eye"></i> View Pro-Intelligence Score</button></div>';
     }
     grid.innerHTML = html;
 }
@@ -218,11 +203,11 @@ function showScoringModal(kpiId) {
     var key = 'kpi_' + kpiId;
     var scores = subScores[key] || [];
     
-    var html = '<p style="margin-bottom:16px;color:var(--text-secondary)"><i class="fas fa-info-circle"></i> Rate each sub-objective 1-5. Click <i class="fas fa-eye"></i> to view system evidence.</p><table><thead><tr><th>#</th><th>Sub-Objective</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Evidence</th></tr></thead><tbody>';
+    var html = '<p style="margin-bottom:16px;color:var(--text-secondary)"><i class="fas fa-brain" style="color:#8b5cf6"></i> Pro Intelligence has automatically scored these based on system metrics. Click <i class="fas fa-eye"></i> to view system evidence.</p><table><thead><tr><th>#</th><th>Sub-Objective</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>Evidence</th></tr></thead><tbody>';
     for (var i = 0; i < def.subObjectives.length; i++) {
         var sub = def.subObjectives[i];
         html += '<tr><td>'+(i+1)+'</td><td><strong>'+sub.name+'</strong><br><small>'+sub.scale.join(' | ')+'</small>' + (sub.note ? '<br><small style="color:#f59e0b"><i class="fas fa-clock"></i> '+sub.note+'</small>' : '') + '</td>';
-        for (var r = 1; r <= 5; r++) html += '<td style="text-align:center"><input type="radio" name="sub_'+i+'" value="'+r+'" '+(scores.length>i&&scores[i]===r?'checked':'')+'></td>';
+        for (var r = 1; r <= 5; r++) html += '<td style="text-align:center"><input type="radio" disabled name="sub_'+i+'" value="'+r+'" '+(scores.length>i&&scores[i]===r?'checked':'')+'></td>';
         html += '<td><button class="btn btn-sm btn-outline" onclick="viewSubEvidence(\''+sub.evidence+'\')"><i class="fas fa-eye"></i></button></td>';
         html += '</tr>';
     }
@@ -256,20 +241,6 @@ function viewSubEvidence(evidenceType) {
         navigateTo('reports');
         setTimeout(function() { switchReportsTab('insights'); }, 300);
     }
-}
-
-function saveSubScores() {
-    var def = kpiDefinitions.find(function(d) { return d.id === currentScoringKPI; }); if (!def) return;
-    var scores = [];
-    for (var i = 0; i < def.subObjectives.length; i++) {
-        var sel = document.querySelector('input[name="sub_'+i+'"]:checked');
-        scores.push(sel ? parseInt(sel.value) : (def.subObjectives[i].defaultScore || 1));
-    }
-    subScores['kpi_' + currentScoringKPI] = scores;
-    localStorage.setItem('kpiSubScores', JSON.stringify(subScores));
-    hideModal('scoringModal');
-    showToast('Scores saved!', 'success');
-    renderKPIScorecard();
 }
 
 function getStarsHTML(count) { var s=''; for(var i=0;i<5;i++) s+=i<count?'<i class="fas fa-star" style="color:#f59e0b"></i>':'<i class="far fa-star" style="color:#d1d5db"></i>'; return s; }
