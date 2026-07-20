@@ -243,7 +243,7 @@ function viewSubEvidence(evidenceType) {
     }
 }
 
-function getStarsHTML(count) { var s=''; for(var i=0;i<5;i++) s+=i<count?'<i class="fas fa-star" style="color:#f59e0b"></i>':'<i class="far fa-star" style="color:#d1d5db"></i>'; return s; }
+function getStarsHTML(count) { var s=''; for(var i=0;i<5;i++) s+=i<count?'<i class="fas fa-star" style="color:#f59e0b"></i>':'<i class="far fa-star" style="color:var(--text-secondary);opacity:0.4"></i>'; return s; }
 function getRatingText(rating) { var labels=['','Critical (1/5)','Poor (2/5)','Average (3/5)','Good (4/5)','Excellent (5/5)']; return labels[rating]||'N/A'; }
 
 async function showRankings() {
