@@ -4,7 +4,7 @@ var API = {
     baseUrl: (function() {
         // On Render.com (HTTPS) or local (HTTP)
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            return 'http://localhost:3000/api';
+            return 'http://localhost:3005/api';
         }
         return '/api'; // This works on Render with HTTPS
     })(),
