@@ -82,14 +82,6 @@ npm run dev
 
 See [docs/DEVOPS.md](docs/DEVOPS.md) for the local Docker workflow, environment variables, CI notes, and deployment guidance.
 
-## Default Login Credentials
-
-- Super Admin: admin@cisco.com / admin123
-- Centre Admin (Nairobi): nairobi.admin@cisco.com / admin123
-- Centre Admin (Mombasa): mombasa.admin@cisco.com / admin123
-- Centre Admin (Kisumu): kisumu.admin@cisco.com / admin123
-- Instructor (Nairobi): instructor1.nairobi@cisco.com / instructor123
-
 ## License
 
 ISC
