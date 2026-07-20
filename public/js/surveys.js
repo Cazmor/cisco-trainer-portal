@@ -228,7 +228,7 @@ async function viewSurveyResults(id) {
         hideLoading();
         
         var content = document.getElementById('surveyResultsContent');
-        var html = '<div style="margin-bottom:20px"><h4>'+survey.title+'</h4></div>';
+        var html = '<div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center"><h4>'+survey.title+'</h4><button class="btn btn-primary btn-sm" onclick="generateSurveyDataInsights('+id+')"><i class="fas fa-robot"></i> AI Data Insights</button></div><div id="surveyAIInsights" style="margin-bottom:20px"></div>';
         
         if (survey.responses.length === 0) {
             html += '<div class="empty-state"><i class="fas fa-inbox"></i><p>No responses yet.</p></div>';
@@ -277,3 +277,21 @@ async function viewSurveyResults(id) {
 }
 
 async function deleteSurvey(id) { if(!confirm('Delete this survey?'))return; showToast('Survey deleted','success'); await loadSurveys(); }
+
+async function generateSurveyDataInsights(id) {
+    try {
+        var insightsDiv = document.getElementById('surveyAIInsights');
+        if (!insightsDiv) return;
+        insightsDiv.innerHTML = '<p style="color:var(--text-secondary)"><i class="fas fa-spinner fa-spin"></i> Analyzing responses with AI...</p>';
+        var survey = await API.surveys.getById(id);
+        if (!survey || !survey.responses || survey.responses.length === 0) {
+            insightsDiv.innerHTML = '<div class="empty-state"><p>No responses to analyze yet.</p></div>';
+            return;
+        }
+        var dataToAnalyze = JSON.stringify(survey.responses.map(function(r){ return { q: r.question_text, type: r.question_type, responses: r.text_responses || r.avg_score }; }));
+        var r = await API.ai.generate({ conversation_type: "quick_chat", messages: [{ role: "user", content: "You are an AI data analyst. Analyze these survey results and provide 3 key insights and 1 recommendation in a short, bulleted format. Data: " + dataToAnalyze }] });
+        insightsDiv.innerHTML = '<div style="background:var(--bg-secondary);padding:15px;border-radius:8px;border-left:4px solid var(--primary-color);font-size:14px;line-height:1.6"><strong><i class="fas fa-robot" style="color:#8b5cf6"></i> AI Data Insights:</strong><br><br>' + r.response.replace(/\n/g, '<br>') + '</div>';
+    } catch(e) {
+        document.getElementById('surveyAIInsights').innerHTML = '<p style="color:#ef4444">Error generating insights: ' + e.message + '</p>';
+    }
+}
